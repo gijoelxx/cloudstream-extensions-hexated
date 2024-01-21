@@ -1,0 +1,204 @@
+[
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=anifreakz.com&sz=%size%",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/gijoelxx/cloudstream-extensions-hexated",
+        "fileSize": 14347,
+        "status": 0,
+        "language": "de",
+        "authors": [
+            "Hexated"
+        ],
+        "tvTypes": [
+            "AnimeMovie",
+            "Anime",
+            "OVA"
+        ],
+        "version": 1,
+        "internalName": "Anifreakz",
+        "url": "https://raw.githubusercontent.com/gijoelxx/cloudstream-extensions-hexated/builds/Anifreakz.cs3",
+        "name": "Anifreakz"
+    },
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=aniworld.to&sz=%size%",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/gijoelxx/cloudstream-extensions-hexated",
+        "fileSize": 16729,
+        "status": 1,
+        "language": "de",
+        "authors": [
+            "Hexated"
+        ],
+        "tvTypes": [
+            "AnimeMovie",
+            "Anime",
+            "OVA"
+        ],
+        "version": 6,
+        "internalName": "Aniworld",
+        "description": "Include: Serienstream",
+        "url": "https://raw.githubusercontent.com/gijoelxx/cloudstream-extensions-hexated/builds/Aniworld.cs3",
+        "name": "Aniworld"
+    },
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=www1.xcine.ru&sz=%size%",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/gijoelxx/cloudstream-extensions-hexated",
+        "fileSize": 65829,
+        "status": 1,
+        "language": "de",
+        "authors": [
+            "GIJoelX"
+        ],
+        "tvTypes": [
+            "TvSeries",
+            "Movie",
+            "Live"
+        ],
+        "version": 1,
+        "internalName": "FilmCloud",
+        "description": "Deutsche Filme/Serien",
+        "url": "https://raw.githubusercontent.com/gijoelxx/cloudstream-extensions-hexated/builds/FilmCloud.cs3",
+        "name": "FilmCloud"
+    },
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=filmpalast.to&sz=%size%",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/gijoelxx/cloudstream-extensions-hexated",
+        "fileSize": 11055,
+        "status": 1,
+        "authors": [
+            "Bnyro"
+        ],
+        "tvTypes": [
+            "TvSeries",
+            "Movie"
+        ],
+        "version": 1,
+        "internalName": "FilmPalast",
+        "description": "German Filmpalast provider",
+        "url": "https://raw.githubusercontent.com/gijoelxx/cloudstream-extensions-hexated/builds/FilmPalast.cs3",
+        "name": "FilmPalast"
+    },
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=kinoger.com&sz=%size%",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/gijoelxx/cloudstream-extensions-hexated",
+        "fileSize": 12879,
+        "status": 1,
+        "language": "de",
+        "authors": [
+            "Hexated"
+        ],
+        "tvTypes": [
+            "TvSeries",
+            "Movie"
+        ],
+        "version": 4,
+        "internalName": "Kinoger",
+        "url": "https://raw.githubusercontent.com/gijoelxx/cloudstream-extensions-hexated/builds/Kinoger.cs3",
+        "name": "Kinoger"
+    },
+    {
+        "iconUrl": "https://kinokiste.live/templates/kkiste/images/favicon.ico",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/gijoelxx/cloudstream-extensions-hexated",
+        "fileSize": 16209,
+        "status": 1,
+        "language": "de",
+        "authors": [
+            "RowdyRushya"
+        ],
+        "tvTypes": [
+            "Movies",
+            "TvSeries",
+            "Anime"
+        ],
+        "version": 1,
+        "internalName": "KinoKiste",
+        "description": "KinoKiste - Filme online stream anschauen Kostenlos auf Deutsch",
+        "url": "https://raw.githubusercontent.com/gijoelxx/cloudstream-extensions-hexated/builds/KinoKiste.cs3",
+        "name": "KinoKiste"
+    },
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=moflix-stream.xyz&sz=%size%",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/gijoelxx/cloudstream-extensions-hexated",
+        "fileSize": 37033,
+        "status": 1,
+        "language": "de",
+        "authors": [
+            "Hexated"
+        ],
+        "tvTypes": [
+            "TvSeries",
+            "Movie"
+        ],
+        "version": 3,
+        "internalName": "Moflix",
+        "description": "Include: Cineclix",
+        "url": "https://raw.githubusercontent.com/gijoelxx/cloudstream-extensions-hexated/builds/Moflix.cs3",
+        "name": "Moflix"
+    },
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=Movie4k.sx&sz=%size%",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/gijoelxx/cloudstream-extensions-hexated",
+        "fileSize": 24478,
+        "status": 1,
+        "language": "de",
+        "authors": [
+            "GIJoelX"
+        ],
+        "tvTypes": [
+            "TvSeries",
+            "Movie",
+            "Live"
+        ],
+        "version": 1,
+        "internalName": "Movie4k",
+        "description": "Movie4k (Debug)",
+        "url": "https://raw.githubusercontent.com/gijoelxx/cloudstream-extensions-hexated/builds/Movie4k.cs3",
+        "name": "Movie4k"
+    },
+    {
+        "iconUrl": "https://www.google.com/s2/favicons?domain=www1.xcine.ru&sz=%size%",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/gijoelxx/cloudstream-extensions-hexated",
+        "fileSize": 23904,
+        "status": 1,
+        "language": "de",
+        "authors": [
+            "GIJoelX"
+        ],
+        "tvTypes": [
+            "TvSeries",
+            "Movie",
+            "Live"
+        ],
+        "version": 1,
+        "internalName": "Xcineio",
+        "description": "XcineStream",
+        "url": "https://raw.githubusercontent.com/gijoelxx/cloudstream-extensions-hexated/builds/Xcineio.cs3",
+        "name": "Xcineio"
+    },
+    {
+        "iconUrl": "https://raw.githubusercontent.com/hexated/cloudstream-extensions-hexated/master/Xcinetop/icon.png",
+        "apiVersion": 1,
+        "repositoryUrl": "https://github.com/gijoelxx/cloudstream-extensions-hexated",
+        "fileSize": 17217,
+        "status": 1,
+        "language": "de",
+        "authors": [
+            "Hexated"
+        ],
+        "tvTypes": [
+            "TvSeries",
+            "Movie"
+        ],
+        "version": 3,
+        "internalName": "Xcinetop",
+        "url": "https://raw.githubusercontent.com/gijoelxx/cloudstream-extensions-hexated/builds/Xcinetop.cs3",
+        "name": "Xcinetop"
+    }
+]
