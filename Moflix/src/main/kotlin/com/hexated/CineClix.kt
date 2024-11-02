@@ -10,7 +10,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.Jsoup
 import kotlin.math.roundToInt
 
-class Movie4k : CineClix() {
+class Movie4k : Moflix() {
     override var name = "Movie4k"
     override var mainUrl = "https://api.movie4k.sx"
 
