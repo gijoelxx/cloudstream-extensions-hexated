@@ -1,7 +1,5 @@
 package com.hexated
-
 import com.lagradost.cloudstream3.mainPageOf
-
 class Cineclix : Moflix() {
     override var name = "Movie4k"
     override var mainUrl = "https://api.movie4k.sx"
