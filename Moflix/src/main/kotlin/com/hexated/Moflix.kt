@@ -41,7 +41,7 @@ open class Moflix : MainAPI() {
         "352/channelables.order:asc" to "Angesagte Serien",
         "358/channelables.order:asc" to "Kinder & Familien",
         "356/popularity:desc" to  "Top Bewertet",
-        "350/channelables.order:asc" to "Hauptseite",
+        "353/channelables.order:asc" to "Release in Kürze",
         "tending-tv" to "Filme im Trend"
     )
 
