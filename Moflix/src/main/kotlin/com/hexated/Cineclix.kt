@@ -3,7 +3,6 @@ package com.hexated
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import org.jsoup.Jsoup
-
 class Cineclix : Moflix() {
     override var name = "CineClix"
     override var mainUrl = "https://api.movie4k.sx"
