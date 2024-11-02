@@ -1,9 +1,9 @@
 package com.hexated
 
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.mainPageOf
-import com.lagradost.cloudstream3.movieApi.MoviesResponse
-import com.lagradost.cloudstream3.utils.Browser
-import org.json.JSONObject
 
 class Movie4k : Moflix() {
     override var name = "Movie4k"
@@ -15,31 +15,39 @@ class Movie4k : Moflix() {
         "browse/?lang=2&keyword=&year=&rating=&votes=&genre=Comedy&country=&cast=&directors=&type=&order_by=trending&page=1&limit=100" to "Komödie Filme"
     )
 
-    override suspend fun getMovies(url: String): MoviesResponse {
-        val response = Browser.get("$mainUrl/$url")
-        return parseMoviesResponse(response)
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        val genre = request.data.split("/").first()
+        val response = app.get("$mainUrl/browse/?lang=2&genre=$genre&page=$page&limit=100")
+        val parsedResponse = response.parsedSafe<Movie4kResponse>()
+        val movies = parsedResponse?.movies?.mapNotNull { it.toSearchResponse() } ?: emptyList()
+        return newHomePageResponse(request.name, movies)
     }
-    
-    private fun parseMoviesResponse(response: String): MoviesResponse {
-        val json = JSONObject(response)
-        val moviesArray = json.getJSONArray("movies")
-        val moviesList = mutableListOf<Movie>()
 
-        for (i in 0 until moviesArray.length()) {
-            val movieObj = moviesArray.getJSONObject(i)
-            val movie = Movie(
-                id = movieObj.getString("_id"),
-                title = movieObj.getString("title"),
-                year = movieObj.optString("year", "Unbekannt"),
-                description = movieObj.optString("description", "Keine Beschreibung verfügbar"),
-                imageUrl = movieObj.optString("image_url", ""),
-                genres = movieObj.optJSONArray("genres")?.let { 
-                    (0 until it.length()).joinToString(", ") { it.getString(it.index) } 
-                } ?: ""
-            )
-            moviesList.add(movie)
+    private fun Movie.toSearchResponse(): SearchResponse? {
+        return newMovieSearchResponse(
+            this.title ?: return null,
+            this.id.toString(),
+            TvType.Movie,
+            false
+        ) {
+            posterUrl = this@toSearchResponse.poster
         }
-
-        return MoviesResponse(movies = moviesList)
     }
+
+    // Weitere Implementierungen für load, search, quickSearch usw. wie in Moflix
 }
+
+// Definiere die Datenklasse für die API-Antwort
+data class Movie4kResponse(
+    @JsonProperty("movies") val movies: List<Movie>
+)
+
+data class Movie(
+    @JsonProperty("id") val id: Int? = null,
+    @JsonProperty("title") val title: String? = null,
+    @JsonProperty("poster") val poster: String? = null,
+    @JsonProperty("backdrop") val backdrop: String? = null,
+    @JsonProperty("description") val description: String? = null,
+    @JsonProperty("year") val year: Int? = null,
+    @JsonProperty("rating") val rating: Float? = null,
+)
