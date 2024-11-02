@@ -40,6 +40,7 @@ open class Moflix : MainAPI() {
         "345/popularity:desc" to "Movie-Datenbank",
         "352/channelables.order:asc" to "Angesagte Serien",
         "358/channelables.order:asc" to "Kinder & Familien",
+        "356/popularity:desc" to  "Top Bewertet",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
