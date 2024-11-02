@@ -42,7 +42,7 @@ open class Moflix : MainAPI() {
         "358/channelables.order:asc" to "Kinder & Familien",
         "356/popularity:desc" to  "Top Bewertet",
         "353/channelables.order:asc" to "Release in Kürze",
-        "tending-tv" to "Filme im Trend"
+           "6277/channelables.order:asc" to "Nightmare Kollektion",
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
