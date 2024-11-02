@@ -10,7 +10,7 @@ class MoflixPlugin: Plugin() {
     override fun load(context: Context) {
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(Moflix())
-        registerMainAPI(Cineclix())
+        registerMainAPI(Movie4k())
         registerExtractorAPI(MoflixClick())
         registerExtractorAPI(Highstream())
         registerExtractorAPI(MoflixFans())
