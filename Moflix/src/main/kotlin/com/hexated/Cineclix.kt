@@ -28,8 +28,8 @@ class Cineclix : Moflix() {
                 false
             ) {
                 posterUrl = movie.poster_path
-                this.year = movie.year.toString()
-                this.rating = movie.rating
+                this.year = movie.year?.toString() // Sicherstellen, dass year ein String ist
+                this.rating = movie.rating?.toDoubleOrNull() // Sicherstellen, dass rating ein Double ist, falls es String ist
             }
         }
 
@@ -43,8 +43,8 @@ class Cineclix : Moflix() {
     data class MovieData(
         @JsonProperty("_id") val _id: String,
         @JsonProperty("title") val title: String,
-        @JsonProperty("year") val year: Int,
-        @JsonProperty("rating") val rating: String,
+        @JsonProperty("year") val year: Int?, // Jahr kann null sein
+        @JsonProperty("rating") val rating: String?, // Rating als String, kann null sein
         @JsonProperty("poster_path") val poster_path: String
     )
 }
