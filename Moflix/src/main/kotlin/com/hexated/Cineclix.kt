@@ -3,6 +3,7 @@ package com.hexated
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import org.jsoup.Jsoup
+
 class Cineclix : Moflix() {
     override var name = "CineClix"
     override var mainUrl = "https://api.movie4k.sx"
@@ -27,8 +28,8 @@ class Cineclix : Moflix() {
                 false
             ) {
                 posterUrl = movie.poster_path
-                this.year = movie.year?.toString() // Sicherstellen, dass year ein String ist
-                this.rating = movie.rating?.toDoubleOrNull() // Sicherstellen, dass rating ein Double ist, falls es String ist
+                this.year = movie.year?.toString() // Sicherstellen, dass year als String übergeben wird
+                this.rating = movie.rating?.toDoubleOrNull() // Umwandeln von rating in Double
             }
         }
 
@@ -42,8 +43,8 @@ class Cineclix : Moflix() {
     data class MovieData(
         @JsonProperty("_id") val _id: String,
         @JsonProperty("title") val title: String,
-        @JsonProperty("year") val year: Int?, // Jahr kann null sein
-        @JsonProperty("rating") val rating: String?, // Rating als String, kann null sein
+        @JsonProperty("year") val year: Int?, // Jahr bleibt als Int
+        @JsonProperty("rating") val rating: String?, // Rating als String
         @JsonProperty("poster_path") val poster_path: String
     )
 }
