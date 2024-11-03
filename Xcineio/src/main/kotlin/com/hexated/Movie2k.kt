@@ -77,7 +77,6 @@ open class Movie2k : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
 override suspend fun search(query: String): List<SearchResponse> {
-    // Abrufen des HTML-Dokuments von der Suchergebnisseite
     val document = app.get("$mainUrl/search/$query").document
 
     // Extrahieren der Filme und Serien aus den Suchergebnissen
@@ -86,15 +85,15 @@ override suspend fun search(query: String): List<SearchResponse> {
         val title = titleElement?.text() ?: return@mapNotNull null
         val href = getProperLink(titleElement.attr("href"))
         val posterUrl = item.selectFirst("img")?.attr("src") ?: return@mapNotNull null
-        val type = item.selectFirst("div.type")?.text() // Bestimmung des Typs
+        val type = item.selectFirst("div.type")?.text()?.trim() // Bestimmung des Typs
 
         // Erstellen einer Suchantwort basierend auf dem Typ
         when (type) {
             "Movie" -> {
-                Media(title = title, id = href).toSearchResponse(TvType.Movie, posterUrl)
+                Media(title = title, _id = href).toSearchResponse(TvType.Movie, posterUrl)
             }
             "TV Series" -> {
-                Media(title = title, id = href).toSearchResponse(TvType.TvSeries, posterUrl)
+                Media(title = title, _id = href).toSearchResponse(TvType.TvSeries, posterUrl)
             }
             else -> null // Für nicht unterstützte Typen
         }
@@ -104,7 +103,7 @@ override suspend fun search(query: String): List<SearchResponse> {
 }
 
 private fun Media.toSearchResponse(tvType: TvType, posterUrl: String): SearchResponse {
-    return newSearchResponse(this.title, this.id, tvType) {
+    return newMovieSearchResponse(this.title, this._id, tvType) {
         this.posterUrl = posterUrl
     }
 }
