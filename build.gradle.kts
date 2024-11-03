@@ -1,6 +1,5 @@
 import com.lagradost.cloudstream3.gradle.CloudstreamExtension
 import com.android.build.gradle.BaseExtension
-
 buildscript {
     repositories {
         google()
