@@ -8,7 +8,7 @@ class FilmCloud: Plugin() {
     override fun load(context: Context) {
         // All providers should be added in this manner. Please don't edit the providers list directly.
         registerMainAPI(Aniworld())
-        registerMainAPI(XCine())
+        registerMainAPI(Xcinetop())
         registerMainAPI(Movie4k())
         registerMainAPI(Movie2k())
         registerMainAPI(KinoKiste())
