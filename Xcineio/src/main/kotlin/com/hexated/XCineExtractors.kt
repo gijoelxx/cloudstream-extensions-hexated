@@ -14,20 +14,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getAndUnpack
 
-class MoflixLink : MoflixClick() {
-    override val name = "MoflixLink"
-    override val mainUrl = "https://moflix-stream.link"
-}
 
-class MoflixFans : MoflixClick() {
-    override val name = "MoflixFans"
-    override val mainUrl = "https://moflix-stream.fans"
-}
-
-class Highstream : MoflixClick() {
-    override val name = "Highstream"
-    override val mainUrl = "https://highstream.tv"
-}
 class VoeSx: Voe() {
     override val name = "Voe Sx"
     override val mainUrl = "https://voe.sx"
