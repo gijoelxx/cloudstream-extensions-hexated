@@ -204,6 +204,7 @@ private fun Media.toSearchResponse(tvType: TvType, posterUrl: String): SearchRes
 
     data class Season(
         @JsonProperty("_id") val _id: String? = null,
+        @JsonProperty("id") val id: String? = null,   // Falls du eine andere ID benötigst
         @JsonProperty("s") val s: Int? = null,
         @JsonProperty("title") val title: String? = null,
         @JsonProperty("year") val year: Int? = null,
