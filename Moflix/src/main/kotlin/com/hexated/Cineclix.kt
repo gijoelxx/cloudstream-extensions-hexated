@@ -1,5 +1,4 @@
 package com.hexated
-
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
@@ -10,6 +9,8 @@ import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.Jsoup
 import kotlin.math.roundToInt
+import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.LoadResponse
 class Cineclix : Moflix() {
     override var name = "CineClix"
     override var mainUrl = "https://api.movie4k.sx"
@@ -33,9 +34,9 @@ class Cineclix : Moflix() {
             TvType.Movie,
             false
         ).apply {
-            posterUrl = this@toSearchResponse.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" } // Korrigierte Referenz
-            year = this@toSearchResponse.year.toString() // Korrigierte Referenz und Umwandlung
-            rating = this@toSearchResponse.rating?.toFloat()?.times(10)?.toInt()?.toString() // Korrigierte Referenz
+            posterUrl = this@toSearchResponse.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" }
+            year = this@toSearchResponse.year.toString() // Umwandlung in String
+            rating = this@toSearchResponse.rating?.toFloat()?.times(10)?.toInt()?.toString() // Umwandlung in String
         }
     }
 
@@ -47,9 +48,10 @@ class Cineclix : Moflix() {
         return newMovieLoadResponse(
             res.title ?: "Unbekannt",
             url,
-            TvType.Movie
+            TvType.Movie,
+            dataUrl = url // Hier den Parameter dataUrl hinzufügen
         ).apply {
-            posterUrl = res.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" } // Korrigierte Referenz
+            posterUrl = res.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" }
             plot = res.description
             year = res.year.toString() // Umwandlung in String
             rating = res.rating?.toFloat()?.times(10)?.toInt()?.toString() // Umwandlung in String
@@ -65,7 +67,7 @@ class Cineclix : Moflix() {
         val title: String,
         val poster_path: String?,
         val year: Int,
-        val rating: String? // or Float, depending on the API
+        val rating: String? // oder Float, abhängig von der API
     )
 
     data class Responses(
