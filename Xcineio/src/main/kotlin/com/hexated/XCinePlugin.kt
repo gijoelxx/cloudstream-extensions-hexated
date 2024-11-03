@@ -12,6 +12,7 @@ class XCinePlugin: Plugin() {
         registerMainAPI(XCine())
         registerMainAPI(Movie4k())
         registerMainAPI(Movie2k())
+        registerMainAPI(FreeTVProvider())
         registerExtractorAPI(StreamTapeAdblockuser())
         registerExtractorAPI(StreamTapeTo())
         registerExtractorAPI(Mixdrp())
