@@ -1,4 +1,5 @@
 package com.hexated
+
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
@@ -11,6 +12,7 @@ import org.jsoup.Jsoup
 import kotlin.math.roundToInt
 import com.lagradost.cloudstream3.mainPageOf
 import com.lagradost.cloudstream3.LoadResponse
+
 class Cineclix : Moflix() {
     override var name = "CineClix"
     override var mainUrl = "https://api.movie4k.sx"
@@ -30,13 +32,13 @@ class Cineclix : Moflix() {
     private fun MovieData.toSearchResponse(): SearchResponse? {
         return newMovieSearchResponse(
             this.title ?: return null,
-            this.id.toString(), // Umwandlung in String
+            this._id, // ID als String
             TvType.Movie,
             false
         ).apply {
             posterUrl = this@toSearchResponse.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" }
             year = this@toSearchResponse.year.toString() // Umwandlung in String
-            rating = this@toSearchResponse.rating?.toFloat()?.times(10)?.toInt()?.toString() // Umwandlung in String
+            rating = this@toSearchResponse.rating?.toFloat() // Umwandlung in Float
         }
     }
 
@@ -54,7 +56,7 @@ class Cineclix : Moflix() {
             posterUrl = res.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" }
             plot = res.description
             year = res.year.toString() // Umwandlung in String
-            rating = res.rating?.toFloat()?.times(10)?.toInt()?.toString() // Umwandlung in String
+            rating = res.rating?.toFloat() // Umwandlung in Float
             addImdbId(res.imdb_id)
             addTMDbId(res.tmdb_id)
             // Trailer hinzufügen, falls vorhanden
@@ -63,11 +65,12 @@ class Cineclix : Moflix() {
     }
 
     data class MovieData(
-        val id: Int,
+        val _id: String,
         val title: String,
         val poster_path: String?,
         val year: Int,
-        val rating: String? // oder Float, abhängig von der API
+        val rating: Float?, // Rating als Float
+        val backdrop_path: String?
     )
 
     data class Responses(
@@ -79,7 +82,7 @@ class Cineclix : Moflix() {
         val poster_path: String?,
         val year: Int,
         val description: String,
-        val rating: String?,
+        val rating: Float?, // Rating als Float
         val imdb_id: String?,
         val tmdb_id: String?,
         val trailer: String?
