@@ -75,10 +75,36 @@ open class Movie2k : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val res = app.get("$mainAPI/data/search/?lang=2&keyword=$query", referer = "$mainUrl/").text
-        return tryParseJson<ArrayList<Media>>(res)?.mapNotNull {
-            it.toSearchResponse()
-        } ?: throw ErrorLoadingException()
+    // Abrufen der HTML-Dokumente von der Suchergebnisseite
+    val document = app.get("$mainUrl/search/$query").document
+
+    // Filmen- und Serienergebnisse extrahieren
+    val results = document.select("div.result-item").mapNotNull { item ->
+        val titleElement = item.selectFirst("div.title > a")
+        val title = titleElement?.text() ?: return@mapNotNull null
+        val href = getProperLink(titleElement.attr("href"))
+        val posterUrl = item.selectFirst("img")?.attr("src") ?: return@mapNotNull null
+        val type = item.selectFirst("div.type")?.text() // Angenommene Struktur zur Bestimmung des Typs
+        
+        // Entscheiden, ob es sich um einen Film oder eine Serie handelt
+        when (type) {
+            "Movie" -> {
+                // Film Suchantwort
+                newMovieSearchResponse(title, href, TvType.Movie) {
+                    this.posterUrl = posterUrl
+                }
+            }
+            "TV Series" -> {
+                // TV-Serie Suchantwort
+                newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
+                    this.posterUrl = posterUrl
+                }
+            }
+            else -> null // Für nicht unterstützte Typen
+        }
+    }
+
+    return results // Rückgabe der kombinierten Ergebnisse
     }
 
     override suspend fun load(url: String): LoadResponse? {
