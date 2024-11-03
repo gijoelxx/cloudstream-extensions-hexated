@@ -20,6 +20,7 @@ cloudstream {
     tvTypes = listOf(
         "TvSeries",
         "Movie",
+        "Live",
     )
 
     iconUrl = "https://www.google.com/s2/favicons?domain=www1.xcine.ru&sz=%size%"
