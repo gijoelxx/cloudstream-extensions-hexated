@@ -8,7 +8,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 import org.jsoup.select.Elements
 
-class FilmpalastProvider : MainAPI() {
+open class FilmpalastProvider : MainAPI() {
     override var mainUrl = "https://filmpalast.to"
     override var name = "Filmpalast"
     override val supportedTypes = setOf(TvType.Movie, TvType.TvSeries)
