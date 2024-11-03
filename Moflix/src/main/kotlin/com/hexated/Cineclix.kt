@@ -1,16 +1,15 @@
 package com.hexated
 
 import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.utils.* // Stelle sicher, dass du alle notwendigen Utils importierst
+import com.lagradost.cloudstream3.LoadResponse
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
-import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
-import com.lagradost.cloudstream3.utils.*
-import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.Jsoup
 
 class Cineclix : Moflix() {
     override var name = "CineClix"
-    override var mainUrl = "https://api.cineclix.to" // Setze die korrekte API-URL hier
+    override var mainUrl = "https://api.movie4k.sx"
 
     override val mainPage = mainPageOf(
         "browse/?lang=de&genre=Action&page=1&limit=100" to "Action Filme",
@@ -31,14 +30,14 @@ class Cineclix : Moflix() {
             TvType.Movie,
             false
         ) {
-            posterUrl = this.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" } // Beispiel für eine Bild-URL
-            this.year = this.year
-            this.rating = this.rating?.toFloat()?.times(10)?.toInt() // Konvertiere auf das richtige Format
+            posterUrl = this.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" }
+            this.year = this.year.toString() // Umwandlung in String
+            this.rating = this.rating?.toFloat()?.times(10)?.toInt()?.toString() // Umwandlung in String
         }
     }
 
     override suspend fun load(url: String): LoadResponse {
-        val movieId = url.toIntOrNull() ?: return LoadResponse.Empty // Stelle sicher, dass der URL ein gültiger ID ist
+        val movieId = url.toIntOrNull() ?: return LoadResponse.Empty
         val res = app.get("$mainUrl/movie/$movieId")
             .parsedSafe<MovieResponse>() ?: return LoadResponse.Empty
 
@@ -49,11 +48,12 @@ class Cineclix : Moflix() {
         ) {
             posterUrl = res.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" }
             this.plot = res.description
-            this.year = res.year
-            this.rating = res.rating?.toFloat()?.times(10)?.toInt() // Konvertiere die Bewertung richtig
+            this.year = res.year.toString() // Umwandlung in String
+            this.rating = res.rating?.toFloat()?.times(10)?.toInt()?.toString() // Umwandlung in String
             addImdbId(res.imdb_id)
             addTMDbId(res.tmdb_id)
-            addTrailer(res.trailer) // Beispiel, falls ein Trailer existiert
+            // Angenommen, trailer ist ein String, hier sollte auch ein Referer gegeben werden, wenn erforderlich
+            this.addTrailer(res.trailer)
         }
     }
 
