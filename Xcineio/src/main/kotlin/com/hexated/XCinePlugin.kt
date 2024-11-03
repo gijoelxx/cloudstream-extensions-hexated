@@ -15,7 +15,6 @@ class FilmCloud: Plugin() {
         registerMainAPI(FreeTVProvider())
         registerMainAPI(Kinoger())
         registerMainAPI(FilmpalastProvider())
-        registerExtractorAPI(Doodstream())
         registerExtractorAPI(StreamHubGg())
         registerExtractorAPI(VoeSx())
         registerExtractorAPI(MetaGnathTuggers())
