@@ -10,7 +10,23 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.getAndUnpack
 
+class VoeSx: Voe() {
+    override val name = "Voe Sx"
+    override val mainUrl = "https://voe.sx"
+}
 
+class MetaGnathTuggers : Voe() {
+    override val name = "Metagnathtuggers"
+    override val mainUrl = "https://metagnathtuggers.com"
+}
+class FileLions : Filesim() {
+    override val name = "Filelions"
+    override var mainUrl = "https://filelions.to"
+}
+class StreamHubGg : Streamhub() {
+    override var name = "Streamhub Gg"
+    override var mainUrl = "https://streamhub.gg"
+}
 class StreamTapeAdblockuser : StreamTape() {
     override var mainUrl = "https://streamtapeadblockuser.xyz"
 }
