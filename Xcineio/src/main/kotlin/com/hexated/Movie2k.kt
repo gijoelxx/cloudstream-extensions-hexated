@@ -99,12 +99,9 @@ override suspend fun search(query: String): List<SearchResponse> {
     return results // Rückgabe der kombinierten Ergebnisse
 }
 
-private fun Media.toSearchResponse(tvType: TvType, posterUrl: String): SearchResponse {
-    // Überprüfen, ob _id nicht null ist und einen Standardwert verwenden, wenn dies der Fall ist
-    val idValue = this._id ?: "default_id" // Setze hier einen sinnvollen Standardwert
-
-    return newMovieSearchResponse(this.title, idValue, tvType) {
-        this.posterUrl = posterUrl // Hier sollte auch eine Null-Sicherheitsprüfung stattfinden
+private fun Media.toSearchResponse(tvType: TvType, posterUrl: String?): SearchResponse {
+    return newMovieSearchResponse(this.title, this._id ?: "default_id", tvType) {
+        this.posterUrl = posterUrl ?: "default_poster_url" // Fallback-Wert verwenden
     }
 }
     private fun getProperLink(link: String?): String {
