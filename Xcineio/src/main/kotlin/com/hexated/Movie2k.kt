@@ -214,6 +214,9 @@ open class Movie2k : MainAPI() {
 
     data class MediaResponse(
         @JsonProperty("movies") val movies: ArrayList<Media>? = arrayListOf(),
+        @JsonProperty("tvShows") val tvShows: ArrayList<Media>? = arrayListOf()  // Neues Feld für Serien
+)
     )
+    
 
 }
