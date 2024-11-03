@@ -10,7 +10,7 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 
 open class Movie2k : MainAPI() {
-    override var name = "XCine"
+    override var name = "Movie2k"
     override var mainUrl = "https://www2.movie2k.ch"
     override var lang = "de"
     override val hasQuickSearch = true
