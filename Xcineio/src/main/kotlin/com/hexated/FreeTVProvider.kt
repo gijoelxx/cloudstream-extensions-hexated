@@ -8,7 +8,7 @@ import java.io.InputStream
 
 class FreeTVProvider : MainAPI() {
     override var lang = "en"
-    override var mainUrl = "https://raw.githubusercontent.com/Free-TV/IPTV/master/playlist.m3u8"
+    override var mainUrl = "https://raw.githubusercontent.com/gijoelxx/iptv/refs/heads/master/streams/GermanFull.m3u"
     override var name = "Free-TV"
     override val hasMainPage = true
     override val hasChromecastSupport = true
