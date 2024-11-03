@@ -4,7 +4,7 @@ import com.lagradost.cloudstream3.mainPageOf
 
 class Movie2k : XCine() {
     override var name = "Movie2k"
-    override var mainUrl = "https://movie2k.ch"
+    override var mainUrl = "https://www2.movie2k.ch"
     override var mainAPI = "https://api.movie2k.ch"
 
     override val mainPage = mainPageOf(
