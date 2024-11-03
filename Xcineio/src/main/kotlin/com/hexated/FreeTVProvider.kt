@@ -7,7 +7,7 @@ import com.lagradost.cloudstream3.utils.Qualities
 import java.io.InputStream
 
 class FreeTVProvider : MainAPI() {
-    override var lang = "en"
+    override var lang = "de"
     override var mainUrl = "https://raw.githubusercontent.com/gijoelxx/iptv/refs/heads/master/streams/GermanFull.m3u"
     override var name = "Free-TV"
     override val hasMainPage = true
