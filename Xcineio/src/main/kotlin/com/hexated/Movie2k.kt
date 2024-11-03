@@ -8,6 +8,8 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import org.jsoup.Jsoup
+import kotlin.math.roundToInt
 
 open class Movie2k : MainAPI() {
     override var name = "Movie2k"
