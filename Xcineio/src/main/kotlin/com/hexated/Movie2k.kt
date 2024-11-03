@@ -81,11 +81,11 @@ override suspend fun search(query: String): List<SearchResponse> {
     val results = document.select("div.result-item").mapNotNull { item ->
         val titleElement = item.selectFirst("div.title > a")
         val title = titleElement?.text() ?: return@mapNotNull null
-        val href = getProperLink(titleElement.attr("href"))
+        val href = getProperLink(titleElement.attr("href")) ?: return@mapNotNull null
         val posterUrl = item.selectFirst("img")?.attr("src") ?: return@mapNotNull null
 
         // Erstellen einer Media-Instanz mit den gesammelten Daten
-        val media = Media(title = title, _id = href, id = href)
+        val media = Media(title = title, _id = href) // id entfernt oder nur _id verwendet
 
         // Erkennung des Medientyps und Erstellung der entsprechenden SearchResponse
         val type = item.selectFirst("div.type")?.text()?.trim()
@@ -101,11 +101,10 @@ override suspend fun search(query: String): List<SearchResponse> {
 
 // Erweiterung der Media-Klasse zur Rückgabe eines SearchResponse
 private fun Media.toSearchResponse(tvType: TvType, posterUrl: String): SearchResponse {
-    return newMovieSearchResponse(this.title, this._id ?: this.id ?: "", tvType) {
+    return newMovieSearchResponse(this.title, this._id ?: "", tvType) {
         this.posterUrl = posterUrl // Zuweisung des Poster-URLs
     }
 }
-
     private fun getProperLink(link: String?): String {
     // Hier kannst du die Logik implementieren, um den Link zu normalisieren.
     // Zum Beispiel, wenn der Link relativ ist, kombiniere ihn mit der Haupt-URL.
