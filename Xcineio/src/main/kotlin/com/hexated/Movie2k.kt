@@ -76,38 +76,38 @@ open class Movie2k : MainAPI() {
 
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
-    override suspend fun search(query: String): List<SearchResponse> {
-    // Abrufen der HTML-Dokumente von der Suchergebnisseite
+override suspend fun search(query: String): List<SearchResponse> {
+    // Abrufen des HTML-Dokuments von der Suchergebnisseite
     val document = app.get("$mainUrl/search/$query").document
 
-    // Filmen- und Serienergebnisse extrahieren
+    // Extrahieren der Filme und Serien aus den Suchergebnissen
     val results = document.select("div.result-item").mapNotNull { item ->
         val titleElement = item.selectFirst("div.title > a")
         val title = titleElement?.text() ?: return@mapNotNull null
         val href = getProperLink(titleElement.attr("href"))
         val posterUrl = item.selectFirst("img")?.attr("src") ?: return@mapNotNull null
-        val type = item.selectFirst("div.type")?.text() // Angenommene Struktur zur Bestimmung des Typs
-        
-        // Entscheiden, ob es sich um einen Film oder eine Serie handelt
+        val type = item.selectFirst("div.type")?.text() // Bestimmung des Typs
+
+        // Erstellen einer Suchantwort basierend auf dem Typ
         when (type) {
             "Movie" -> {
-                // Film Suchantwort
-                newMovieSearchResponse(title, href, TvType.Movie) {
-                    this.posterUrl = posterUrl
-                }
+                Media(title = title, id = href).toSearchResponse(TvType.Movie, posterUrl)
             }
             "TV Series" -> {
-                // TV-Serie Suchantwort
-                newTvSeriesSearchResponse(title, href, TvType.TvSeries) {
-                    this.posterUrl = posterUrl
-                }
+                Media(title = title, id = href).toSearchResponse(TvType.TvSeries, posterUrl)
             }
             else -> null // Für nicht unterstützte Typen
         }
     }
 
     return results // Rückgabe der kombinierten Ergebnisse
+}
+
+private fun Media.toSearchResponse(tvType: TvType, posterUrl: String): SearchResponse {
+    return newSearchResponse(this.title, this.id, tvType) {
+        this.posterUrl = posterUrl
     }
+}
 
     override suspend fun load(url: String): LoadResponse? {
         val id = parseJson<Link>(url).id
