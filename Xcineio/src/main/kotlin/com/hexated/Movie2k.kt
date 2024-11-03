@@ -83,79 +83,94 @@ open class Movie2k : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        val id = parseJson<Link>(url).id
-
-        val res = app.get("$mainAPI/data/watch/?_id=$id", referer = "$mainUrl/")
-            .parsedSafe<MediaDetail>() ?: throw ErrorLoadingException()
-        val type = if (res.tv == 1) "tv" else "movie"
-
-        val recommendations =
-            app.get("$mainAPI/data/related_movies/?lang=2&cat=$type&_id=$id&server=0").text.let {
-                tryParseJson<List<Media>>(it)
-            }?.mapNotNull {
-                it.toSearchResponse()
-            }
-
-        return if (type == "tv") {
-            val episodes = res.streams?.groupBy { it.e.toString().toIntOrNull() }?.mapNotNull { eps ->
-                val epsNum = eps.key
-override suspend fun load(url: String): LoadResponse? {
-    val id = parseJson<Link>(url).id
-
-    // Hole die Mediendetails
-    val res = app.get("$mainAPI/data/watch/?_id=$id", referer = "$mainUrl/")
+    // Hole die Medieninformationen über den Endpunkt (wie im Beispiel)
+    val res = app.get("$mainAPI/data/watch/?_id=${url.fixId()}", referer = "$mainUrl/")
         .parsedSafe<MediaDetail>() ?: throw ErrorLoadingException()
-    val type = if (res.tv == 1) "tv" else "movie"
 
-    // Empfehlungen abrufen
-    val recommendations = app.get("$mainAPI/data/related_movies/?lang=2&cat=$type&_id=$id&server=0").text.let {
-        tryParseJson<List<Media>>(it)
-    }?.mapNotNull {
-        it.toSearchResponse()
+    val uri = Jsoup.parse(res.seo.toString()).selectFirst("link[rel=canonical]")?.attr("href")
+    val id = res.title?.id
+    val title = res.title?.name ?: ""
+    val poster = res.title?.poster
+    val backdrop = res.title?.backdrop
+    val tags = res.title?.keywords?.mapNotNull { it.displayName }
+    val year = res.title?.year
+    val isSeries = res.title?.isSeries
+    val certification = res.title?.certification
+    val duration = res.title?.runtime
+    val type = getType(isSeries)
+    val description = res.title?.description
+    val trailers = res.title?.videos?.filter { it.category.equals("trailer", true) }?.mapNotNull { it.src }
+    val rating = "${res.title?.rating}".toRatingInt()
+    val actors = res.credits?.actors?.mapNotNull {
+        ActorData(Actor(it.name ?: return@mapNotNull null, it.poster), roleString = it.pivot?.character)
     }
+    val recommendations = app.get("$mainAPI/data/related_movies/?_id=$id&lang=2", referer = "$mainUrl/")
+        .parsedSafe<Responses>()?.titles?.mapNotNull { it.toSearchResponse() }
 
-    // Überprüfen, ob es sich um eine Serie handelt
-    if (type == "tv") {
-        // Neue Logik zum Abrufen der Episoden
-        val episodeResponse = app.get("$mainAPI/data/season/?_id=${res._id}", referer = "$mainUrl/")
-            .parsedSafe<SeasonResponse>() ?: throw ErrorLoadingException()
+    return if (type == TvType.TvSeries) {
+        // Abruf der Episoden pro Staffel bei Serien
+        val episodes = res.seasons?.data?.mapNotNull { season ->
+            app.get("$mainAPI/data/season/?_id=${res.title?.id}&season=${season.number}", referer = "$mainUrl/")
+                .parsedSafe<Responses>()?.episodes?.data?.map { episode ->
+                    val status = if (episode.status.equals("upcoming", true)) " • [UPCOMING]" else ""
+                    Episode(
+                        LoadData(id, episode.seasonNumber, episode.episodeNumber, isSeries).toJson(),
+                        episode.name + status,
+                        episode.seasonNumber,
+                        episode.episodeNumber,
+                        episode.poster,
+                        episode.rating?.times(10)?.roundToInt(),
+                        episode.description
+                    ).apply {
+                        this.addDate(episode.releaseDate?.substringBefore("T"))
+                    }
+                }
+        }?.flatten() ?: emptyList()
 
-        // Verarbeiten der Episoden
-        val episodes = episodeResponse.seasons.flatMap { season ->
-            season.streams.map { stream ->
-                Episode(link = Link(stream.stream), episode = season.s)
-            }
-        }
-
-        // Rückgabe der Serienantwort
-        return newTvSeriesLoadResponse(
-            res.title ?: res.original_title ?: return null,
-            url,
-            TvType.TvSeries,
-            episodes
-        ) {
-            this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
-            this.year = res.year
-            this.plot = res.storyline ?: res.overview
-            this.tags = listOf(res.genres ?: "")
+        // Rückgabe der Serieninformationen
+        newTvSeriesLoadResponse(title, uri ?: url, TvType.TvSeries, episodes) {
+            this.posterUrl = poster
+            this.backgroundPosterUrl = backdrop
+            this.year = year
+            this.showStatus = getStatus(res.title?.status)
+            this.plot = description
+            this.tags = tags
+            this.rating = rating
+            this.actors = actors
+            this.duration = duration
             this.recommendations = recommendations
+            this.contentRating = certification
+            addTrailer(trailers)
+            addImdbId(res.title?.imdbId)
+            addTMDbId(res.title?.tmdbId)
         }
     } else {
-        // Rückgabe für Filme
-        return newMovieLoadResponse(
-            res.original_title ?: res.title ?: return null,
-            url,
+        // Abruf der Links für Filme
+        val urls = res.title?.videos?.filter { it.category.equals("full", true) }
+        
+        newMovieLoadResponse(
+            title,
+            uri ?: url,
             TvType.Movie,
-            res.streams?.map { Link(it.stream) }?.toJson()
+            LoadData(isSeries = isSeries, urls = urls)
         ) {
-            this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
-            this.year = res.year
-            this.plot = res.storyline ?: res.overview
-            this.tags = listOf(res.genres ?: "")
+            this.posterUrl = poster
+            this.backgroundPosterUrl = backdrop
+            this.year = year
+            this.comingSoon = res.title?.status.equals("upcoming", true)
+            this.plot = description
+            this.tags = tags
+            this.rating = rating
+            this.actors = actors
+            this.duration = duration
             this.recommendations = recommendations
+            this.contentRating = certification
+            addTrailer(trailers)
+            addImdbId(res.title?.imdbId)
+            addTMDbId(res.title?.tmdbId)
         }
     }
-}
+    }
                 override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
