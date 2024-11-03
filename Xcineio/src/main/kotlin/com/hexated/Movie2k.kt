@@ -47,31 +47,31 @@ open class Movie2k : MainAPI() {
         return "https://cdn.movie4k.stream/data${link.substringAfter("/data")}"
     }
 
-override suspend fun getMainPage(
-    page: Int,
-    request: MainPageRequest
-): HomePageResponse {
-    val homeResponse = app.get("$mainAPI/${request.data}&page=$page", referer = "$mainUrl/")
-        .parsedSafe<MediaResponse>() ?: throw ErrorLoadingException()
-
-    val movies = homeResponse.movies?.mapNotNull { it.toSearchResponse(TvType.Movie) } ?: emptyList()
-    val tvShows = homeResponse.tvShows?.mapNotNull { it.toSearchResponse(TvType.TvSeries) } ?: emptyList()
-
-    return newHomePageResponse(request.name, movies + tvShows)
-}
-
-private fun Media.toSearchResponse(type: TvType): SearchResponse? {
-    return newAnimeSearchResponse(
-        title ?: original_title ?: return null,
-        Link(id = _id).toJson(),
-        type,  // Verwendet den übergebenen TvType
-        
-    ) {
-        this.posterUrl = getImageUrl(poster_path ?: backdrop_path) ?: getBackupImageUrl(img)
-        addDub(last_updated_epi?.toIntOrNull())
-        addSub(totalEpisodes?.toIntOrNull())
+    override suspend fun getMainPage(
+        page: Int,
+        request: MainPageRequest
+    ): HomePageResponse {
+        val home =
+            app.get("$mainAPI/${request.data}&page=$page", referer = "$mainUrl/")
+                .parsedSafe<MediaResponse>()?.movies?.mapNotNull { res ->
+                    res.toSearchResponse()
+                } ?: throw ErrorLoadingException()
+        return newHomePageResponse(request.name, home)
     }
-}
+
+    private fun Media.toSearchResponse(): SearchResponse? {
+        return newAnimeSearchResponse(
+            title ?: original_title ?: return null,
+//            Data(_id).toJson(),
+            Link(id=_id).toJson(),
+            TvType.TvSeries,
+            false
+        ) {
+            this.posterUrl = getImageUrl(poster_path ?: backdrop_path) ?: getBackupImageUrl(img)
+            addDub(last_updated_epi?.toIntOrNull())
+            addSub(totalEpisodes?.toIntOrNull())
+        }
+    }
 
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
@@ -214,9 +214,6 @@ private fun Media.toSearchResponse(type: TvType): SearchResponse? {
 
     data class MediaResponse(
         @JsonProperty("movies") val movies: ArrayList<Media>? = arrayListOf(),
-        @JsonProperty("tvShows") val tvShows: ArrayList<Media>? = arrayListOf()  // Neues Feld für Serien
-)
     )
-    
 
 }
