@@ -1,50 +1,82 @@
 package com.hexated
 
-import com.fasterxml.jackson.annotation.JsonProperty
-import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.mainPageOf
+import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import org.jsoup.Jsoup
 
 class Cineclix : Moflix() {
     override var name = "CineClix"
-    override var mainUrl = "https://api.movie4k.sx"
+    override var mainUrl = "https://api.cineclix.to" // Setze die korrekte API-URL hier
 
     override val mainPage = mainPageOf(
-        "browse/?lang=2&keyword=&year=&rating=&votes=&genre=Action&country=&cast=&directors=&type=&order_by=trending&page=1&limit=100" to "Trend Filme",
-        "browse/?lang=2&keyword=&year=&rating=&votes=&genre=Drama&country=&cast=&directors=&type=&order_by=trending&page=1&limit=100" to "Drama Filme",
-        "browse/?lang=2&keyword=&year=&rating=&votes=&genre=Comedy&country=&cast=&directors=&type=&order_by=trending&page=1&limit=100" to "Komödie Filme"
+        "browse/?lang=de&genre=Action&page=1&limit=100" to "Action Filme",
+        "browse/?lang=de&genre=Drama&page=1&limit=100" to "Drama Filme",
+        "browse/?lang=de&genre=Comedy&page=1&limit=100" to "Komödie Filme"
     )
 
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val response = app.get("$mainUrl/browse/?lang=2&order_by=trending&page=$page&limit=100")
-            .parsedSafe<ResponseData>()
-
-        val movies = response?.movies ?: emptyList()
-
-        val home = movies.mapNotNull { movie ->
-            newMovieSearchResponse(
-                movie.title,
-                movie._id,
-                TvType.Movie,
-                false
-            ) {
-                posterUrl = movie.poster_path
-                this.year = movie.year?.toString() // Sicherstellen, dass year als String übergeben wird
-                this.rating = movie.rating?.toDoubleOrNull() // Umwandeln von rating in Double
-            }
-        }
-
+        val home = app.get("$mainUrl/browse?page=$page&limit=100")
+            .parsedSafe<Responses>()?.movies?.mapNotNull { it.toSearchResponse() } ?: emptyList()
         return newHomePageResponse(request.name, home)
     }
 
-    data class ResponseData(
-        @JsonProperty("movies") val movies: List<MovieData>? = listOf()
-    )
+    private fun MovieData.toSearchResponse(): SearchResponse? {
+        return newMovieSearchResponse(
+            this.title ?: return null,
+            this.id.toString(), // Stelle sicher, dass dies ein String ist
+            TvType.Movie,
+            false
+        ) {
+            posterUrl = this.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" } // Beispiel für eine Bild-URL
+            this.year = this.year
+            this.rating = this.rating?.toFloat()?.times(10)?.toInt() // Konvertiere auf das richtige Format
+        }
+    }
+
+    override suspend fun load(url: String): LoadResponse {
+        val movieId = url.toIntOrNull() ?: return LoadResponse.Empty // Stelle sicher, dass der URL ein gültiger ID ist
+        val res = app.get("$mainUrl/movie/$movieId")
+            .parsedSafe<MovieResponse>() ?: return LoadResponse.Empty
+
+        return newMovieLoadResponse(
+            res.title ?: "Unbekannt",
+            url,
+            TvType.Movie
+        ) {
+            posterUrl = res.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" }
+            this.plot = res.description
+            this.year = res.year
+            this.rating = res.rating?.toFloat()?.times(10)?.toInt() // Konvertiere die Bewertung richtig
+            addImdbId(res.imdb_id)
+            addTMDbId(res.tmdb_id)
+            addTrailer(res.trailer) // Beispiel, falls ein Trailer existiert
+        }
+    }
 
     data class MovieData(
-        @JsonProperty("_id") val _id: String,
-        @JsonProperty("title") val title: String,
-        @JsonProperty("year") val year: Int?, // Jahr bleibt als Int
-        @JsonProperty("rating") val rating: String?, // Rating als String
-        @JsonProperty("poster_path") val poster_path: String
+        val id: Int,
+        val title: String,
+        val poster_path: String?,
+        val year: Int,
+        val rating: String? // oder Float, je nach API
+    )
+
+    data class Responses(
+        val movies: List<MovieData>
+    )
+
+    data class MovieResponse(
+        val title: String,
+        val poster_path: String?,
+        val year: Int,
+        val description: String,
+        val rating: String?,
+        val imdb_id: String?,
+        val tmdb_id: String?,
+        val trailer: String?
     )
 }
