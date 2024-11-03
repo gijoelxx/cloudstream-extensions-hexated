@@ -99,10 +99,12 @@ override suspend fun search(query: String): List<SearchResponse> {
     return results // Rückgabe der kombinierten Ergebnisse
 }
 
-// Erweiterung der Media-Klasse zur Rückgabe eines SearchResponse
 private fun Media.toSearchResponse(tvType: TvType, posterUrl: String): SearchResponse {
-    return newMovieSearchResponse(this.title, this._id ?: "", tvType) {
-        this.posterUrl = posterUrl // Zuweisung des Poster-URLs
+    // Überprüfen, ob _id nicht null ist und einen Standardwert verwenden, wenn dies der Fall ist
+    val idValue = this._id ?: "default_id" // Setze hier einen sinnvollen Standardwert
+
+    return newMovieSearchResponse(this.title, idValue, tvType) {
+        this.posterUrl = posterUrl // Hier sollte auch eine Null-Sicherheitsprüfung stattfinden
     }
 }
     private fun getProperLink(link: String?): String {
