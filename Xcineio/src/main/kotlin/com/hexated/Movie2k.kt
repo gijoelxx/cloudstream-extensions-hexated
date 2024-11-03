@@ -65,7 +65,7 @@ private fun Media.toSearchResponse(type: TvType): SearchResponse? {
         title ?: original_title ?: return null,
         Link(id = _id).toJson(),
         type,  // Verwendet den übergebenen TvType
-        isDubbed = false
+        
     ) {
         this.posterUrl = getImageUrl(poster_path ?: backdrop_path) ?: getBackupImageUrl(img)
         addDub(last_updated_epi?.toIntOrNull())
