@@ -77,6 +77,38 @@ open class Doodstream : ExtractorApi() {
     override val name = "Doodstream"
     override val mainUrl = "https://doodstream.com"
     override val requiresReferer = false
+override suspend fun getUrl(
+        url: String,
+        referer: String?,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val response = app.get(url, referer = referer)
+        val script = if (!getPacked(response.text).isNullOrEmpty()) {
+            getAndUnpack(response.text)
+        } else {
+            response.document.selectFirst("script:containsData(sources:)")?.data()
+        }
+        val m3u8 =
+            Regex("file:\\s*\"(.*?m3u8.*?)\"").find(script ?: return)?.groupValues?.getOrNull(1)
+        callback.invoke(
+            ExtractorLink(
+                name,
+                name,
+                m3u8 ?: return,
+                "$mainUrl/",
+                Qualities.Unknown.value,
+                INFER_TYPE
+            )
+        )
+    }
+
+}
+
+open class Doodstream : ExtractorApi() {
+    override val name = "Doodstream"
+    override val mainUrl = "https://doodstream.com"
+    override val requiresReferer = false
 
     override suspend fun getUrl(
         url: String,
@@ -112,25 +144,20 @@ open class Doodstream : ExtractorApi() {
     }
 
 }
-open class Streamcrypt : ExtractorApi() {
-    override var name = "Streamcrypt"
-    override var mainUrl = "https://streamcrypt.net"
-    override val requiresReferer = false
-
     override suspend fun getUrl(
         url: String,
         referer: String?,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ) {
-        val doc = app.get(url).document
-        doc.select("script").map { it.data() }.filter { it.contains("eval(function(p,a,c,k,e,d)") }
-            .map { script ->
-                val data = getAndUnpack(script)
-                val link = Regex("src:['\"](.*)['\"]").find(data)?.groupValues?.getOrNull(1)
-                    ?: return@map null
-                callback.invoke(
-                    ExtractorLink(
+        val req = app.get(url)
+        val host = getBaseUrl(req.url)
+        val response0 = req.text
+        val md5 = host + (Regex("/pass_md5/[^']*").find(response0)?.value ?: return)
+        val trueUrl =
+            app.get(md5, referer = req.url).text + "qWMG3yc6F5?token=" + md5.substringAfterLast("/")
+        val quality = Regex("\\d{3,4}p").find(
+            response0.substringAfter("<titl     ExtractorLink(
                         this.name,
                         this.name,
                         link,
