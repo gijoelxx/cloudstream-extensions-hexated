@@ -9,7 +9,7 @@ import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 
-open class XCine : MainAPI() {
+open class Movie2k : MainAPI() {
     override var name = "XCine"
     override var mainUrl = "https://www2.movie2k.ch"
     override var lang = "de"
