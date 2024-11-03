@@ -1,4 +1,5 @@
 package com.hexated
+
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
@@ -7,11 +8,9 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
-import org.jsoup.nodes.Element
-
 
 open class Movie2k : MainAPI() {
-    override var name = "Movie2k"
+    override var name = "XCine"
     override var mainUrl = "https://www2.movie2k.ch"
     override var lang = "de"
     override val hasQuickSearch = true
@@ -26,16 +25,6 @@ open class Movie2k : MainAPI() {
         "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=tvseries&order_by=Trending" to "Trending Serien",
         "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=movies&order_by=Updates" to "Updated Filme",
         "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=tvseries&order_by=Updates" to "Updated Serien",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Action&country=&cast=&directors=&type=&order_by=trending"  to "Action Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Animation&country=&cast=&directors=&type=&order_by=trending"  to "Animations Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Kom%C3%B6die&country=&cast=&directors=&type=&order_by=trending"  to "Komödien Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Dokumentation&country=&cast=&directors=&type=&order_by=trending"  to "Dokumentations Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Drama&country=&cast=&directors=&type=&order_by=trending"  to "Drama Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Horror&country=&cast=&directors=&type=&order_by=trending"  to "Horror Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Romantik&country=&cast=&directors=&type=&order_by=trending"  to "Romantik Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Sci-Fi&country=&cast=&directors=&type=&order_by=trending"  to "Sci-Fi Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Thriller&country=&cast=&directors=&type=&order_by=trending"  to "Thriller Filme",
- 
     )
 
     private fun getImageUrl(link: String?): String? {
@@ -75,44 +64,14 @@ open class Movie2k : MainAPI() {
     }
 
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
-override suspend fun search(query: String): List<SearchResponse> {
-    val document = app.get("$mainUrl/search/$query").document
 
-    val results = document.select("div.result-item").mapNotNull { item ->
-        val titleElement = item.selectFirst("div.title > a")
-        val title = titleElement?.text() ?: return@mapNotNull null
-        val href = getProperLink(titleElement.attr("href")) ?: return@mapNotNull null
-        val posterUrl = item.selectFirst("img")?.attr("src") ?: return@mapNotNull null
-
-        // Erstellen einer Media-Instanz mit den gesammelten Daten
-        val media = Media(title = title, _id = href) // id entfernt oder nur _id verwendet
-
-        // Erkennung des Medientyps und Erstellung der entsprechenden SearchResponse
-        val type = item.selectFirst("div.type")?.text()?.trim()
-        when (type) {
-            "Movie" -> media.toSearchResponse(TvType.Movie, posterUrl)
-            "TV Series" -> media.toSearchResponse(TvType.TvSeries, posterUrl)
-            else -> null // Unbekannter Typ, nichts zurückgeben
-        }
+    override suspend fun search(query: String): List<SearchResponse> {
+        val res = app.get("$mainAPI/data/search/?lang=2&keyword=$query", referer = "$mainUrl/").text
+        return tryParseJson<ArrayList<Media>>(res)?.mapNotNull {
+            it.toSearchResponse()
+        } ?: throw ErrorLoadingException()
     }
 
-    return results // Rückgabe der kombinierten Ergebnisse
-}
-
-private fun Media.toSearchResponse(tvType: TvType, posterUrl: String?): SearchResponse {
-    return newMovieSearchResponse(this.title, this._id ?: "default_id", tvType) {
-        this.posterUrl = posterUrl ?: "default_poster_url" // Fallback-Wert verwenden
-    }
-}
-    private fun getProperLink(link: String?): String {
-    // Hier kannst du die Logik implementieren, um den Link zu normalisieren.
-    // Zum Beispiel, wenn der Link relativ ist, kombiniere ihn mit der Haupt-URL.
-    return if (link != null && link.startsWith("/")) {
-        "$mainUrl$link" // Kombiniert die Basis-URL mit dem relativen Link.
-    } else {
-        link ?: "" // Fallback auf einen leeren String, falls der Link null ist.
-    }
-}
     override suspend fun load(url: String): LoadResponse? {
         val id = parseJson<Link>(url).id
 
@@ -202,7 +161,6 @@ private fun Media.toSearchResponse(tvType: TvType, posterUrl: String?): SearchRe
 
     data class Season(
         @JsonProperty("_id") val _id: String? = null,
-        @JsonProperty("id") val id: String? = null,   // Falls du eine andere ID benötigst
         @JsonProperty("s") val s: Int? = null,
         @JsonProperty("title") val title: String? = null,
         @JsonProperty("year") val year: Int? = null,
