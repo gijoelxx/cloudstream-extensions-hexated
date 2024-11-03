@@ -99,39 +99,64 @@ open class Movie2k : MainAPI() {
         return if (type == "tv") {
             val episodes = res.streams?.groupBy { it.e.toString().toIntOrNull() }?.mapNotNull { eps ->
                 val epsNum = eps.key
-                val epsLink = eps.value.map { it.stream }.toJson()
-                Episode(epsLink, episode = epsNum)
-            } ?: emptyList()
-            newTvSeriesLoadResponse(
-                res.title ?: res.original_title ?: return null,
-                url,
-                TvType.TvSeries,
-                episodes
-            ) {
-                this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
-                this.year = res.year
-                this.plot = res.storyline ?: res.overview
-                this.tags = listOf(res.genres ?: "")
-                this.recommendations = recommendations
-            }
-        } else {
-            newMovieLoadResponse(
-                res.original_title ?: res.title ?: return null,
-                url,
-                TvType.Movie,
-                res.streams?.map { Link(it.stream) }?.toJson()
-            ) {
-                this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
-                this.year = res.year
-                this.plot = res.storyline ?: res.overview
-                this.tags = listOf(res.genres ?: "")
-                this.recommendations = recommendations
+override suspend fun load(url: String): LoadResponse? {
+    val id = parseJson<Link>(url).id
+
+    // Hole die Mediendetails
+    val res = app.get("$mainAPI/data/watch/?_id=$id", referer = "$mainUrl/")
+        .parsedSafe<MediaDetail>() ?: throw ErrorLoadingException()
+    val type = if (res.tv == 1) "tv" else "movie"
+
+    // Empfehlungen abrufen
+    val recommendations = app.get("$mainAPI/data/related_movies/?lang=2&cat=$type&_id=$id&server=0").text.let {
+        tryParseJson<List<Media>>(it)
+    }?.mapNotNull {
+        it.toSearchResponse()
+    }
+
+    // Überprüfen, ob es sich um eine Serie handelt
+    if (type == "tv") {
+        // Neue Logik zum Abrufen der Episoden
+        val episodeResponse = app.get("$mainAPI/data/season/?_id=${res._id}", referer = "$mainUrl/")
+            .parsedSafe<SeasonResponse>() ?: throw ErrorLoadingException()
+
+        // Verarbeiten der Episoden
+        val episodes = episodeResponse.seasons.flatMap { season ->
+            season.streams.map { stream ->
+                Episode(link = Link(stream.stream), episode = season.s)
             }
         }
 
+        // Rückgabe der Serienantwort
+        return newTvSeriesLoadResponse(
+            res.title ?: res.original_title ?: return null,
+            url,
+            TvType.TvSeries,
+            episodes
+        ) {
+            this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
+            this.year = res.year
+            this.plot = res.storyline ?: res.overview
+            this.tags = listOf(res.genres ?: "")
+            this.recommendations = recommendations
+        }
+    } else {
+        // Rückgabe für Filme
+        return newMovieLoadResponse(
+            res.original_title ?: res.title ?: return null,
+            url,
+            TvType.Movie,
+            res.streams?.map { Link(it.stream) }?.toJson()
+        ) {
+            this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
+            this.year = res.year
+            this.plot = res.storyline ?: res.overview
+            this.tags = listOf(res.genres ?: "")
+            this.recommendations = recommendations
+        }
     }
-
-    override suspend fun loadLinks(
+}
+                override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
