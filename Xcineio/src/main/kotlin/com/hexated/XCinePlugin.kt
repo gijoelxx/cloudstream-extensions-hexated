@@ -12,6 +12,8 @@ class FilmCloud: Plugin() {
         registerMainAPI(Movie2k())
         registerMainAPI(KinoKiste())
         registerMainAPI(FreeTVProvider())
+        registerMainAPI(Kinoger())
+        registerExtractorAPI(Kinogeru())
         registerExtractorAPI(StreamTapeAdblockuser())
         registerExtractorAPI(StreamTapeTo())
         registerExtractorAPI(Mixdrp())
