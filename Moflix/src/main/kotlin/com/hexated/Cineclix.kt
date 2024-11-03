@@ -29,13 +29,13 @@ class Cineclix : Moflix() {
     private fun MovieData.toSearchResponse(): SearchResponse? {
         return newMovieSearchResponse(
             this.title ?: return null,
-            this.id.toString(), // Stelle sicher, dass dies ein String ist
+            this.id.toString(), // Umwandlung in String
             TvType.Movie,
             false
-        ) {
-            posterUrl = this.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" }
-            this.year = this.year.toString() // Umwandlung in String
-            this.rating = this.rating?.toFloat()?.times(10)?.toInt()?.toString() // Umwandlung in String
+        ).apply {
+            posterUrl = this@toSearchResponse.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" } // Korrigierte Referenz
+            year = this@toSearchResponse.year.toString() // Korrigierte Referenz und Umwandlung
+            rating = this@toSearchResponse.rating?.toFloat()?.times(10)?.toInt()?.toString() // Korrigierte Referenz
         }
     }
 
@@ -48,15 +48,15 @@ class Cineclix : Moflix() {
             res.title ?: "Unbekannt",
             url,
             TvType.Movie
-        ) {
-            posterUrl = res.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" }
-            this.plot = res.description
-            this.year = res.year.toString() // Umwandlung in String
-            this.rating = res.rating?.toFloat()?.times(10)?.toInt()?.toString() // Umwandlung in String
+        ).apply {
+            posterUrl = res.poster_path?.let { "https://image.tmdb.org/t/p/w500$it" } // Korrigierte Referenz
+            plot = res.description
+            year = res.year.toString() // Umwandlung in String
+            rating = res.rating?.toFloat()?.times(10)?.toInt()?.toString() // Umwandlung in String
             addImdbId(res.imdb_id)
             addTMDbId(res.tmdb_id)
-            // Angenommen, trailer ist ein String, hier sollte auch ein Referer gegeben werden, wenn erforderlich
-            this.addTrailer(res.trailer)
+            // Trailer hinzufügen, falls vorhanden
+            res.trailer?.let { addTrailer(it) }
         }
     }
 
@@ -65,7 +65,7 @@ class Cineclix : Moflix() {
         val title: String,
         val poster_path: String?,
         val year: Int,
-        val rating: String? // oder Float, je nach API
+        val rating: String? // or Float, depending on the API
     )
 
     data class Responses(
