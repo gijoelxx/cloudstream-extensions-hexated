@@ -1,123 +1,162 @@
 package com.hexated
+
 import com.fasterxml.jackson.annotation.JsonProperty
 import com.lagradost.cloudstream3.*
+import com.lagradost.cloudstream3.LoadResponse.Companion.addActors
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.mvvm.safeApiCall
+import com.lagradost.cloudstream3.utils.*
 import com.lagradost.cloudstream3.utils.AppUtils.parseJson
 import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
-import com.lagradost.cloudstream3.utils.ExtractorLink
-import com.lagradost.cloudstream3.utils.Qualities
-import com.lagradost.cloudstream3.utils.loadExtractor
+import org.jsoup.nodes.Element
 
-open class XCine : MainAPI() {
-    override var name = "XCine"
-    override var mainUrl = "https://www3.xcine.io"
-    override var lang = "de"
-    override val hasQuickSearch = true
-    override val usesWebView = false
+class Xcinetop : MainAPI() {
+    override var mainUrl = "https://xcine.click"
+    override var name = "Xcine.top"
     override val hasMainPage = true
+    override val hasDownloadSupport = true
+    override var lang = "de"
     override val supportedTypes = setOf(TvType.TvSeries, TvType.Movie)
-    open var mainAPI = "https://api.xcine.ru"
+
+    companion object {
+        private const val mainServer = "https://supervideo.tv"
+    }
 
     override val mainPage = mainPageOf(
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=movies&order_by=trending" to "Trending",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=movies&order_by=Views" to "Most View Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=tvseries&order_by=Trending" to "Trending Serien",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=movies&order_by=Updates" to "Updated Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=tvseries&order_by=Updates" to "Updated Serien",
+        "$mainUrl/aktuelle-kinofilme-im-kino/page/" to "Kinofilme im kino",
+        "$mainUrl/serienstream-deutsch/page/" to "Serien",
+        "$mainUrl/animation/page/" to "Animation",
     )
 
-    private fun getImageUrl(link: String?): String? {
-        if (link == null) return null
-        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/w500/$link" else link
-    }
-
-    private fun getBackupImageUrl(link: String?): String? {
-        if (link == null) return null
-        return "https://cdn.movie4k.stream/data${link.substringAfter("/data")}"
-    }
-
-    override suspend fun getMainPage(
-        page: Int,
-        request: MainPageRequest
-    ): HomePageResponse {
-        val home =
-            app.get("$mainAPI/${request.data}&page=$page", referer = "$mainUrl/")
-                .parsedSafe<MediaResponse>()?.movies?.mapNotNull { res ->
-                    res.toSearchResponse()
-                } ?: throw ErrorLoadingException()
+    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
+        val document = app.get("${request.data}$page/").document
+        val home = document.select("div#dle-content div.movie-item").mapNotNull {
+            it.toSearchResult()
+        }
         return newHomePageResponse(request.name, home)
     }
 
-    private fun Media.toSearchResponse(): SearchResponse? {
-        return newAnimeSearchResponse(
-            title ?: original_title ?: return null,
-//            Data(_id).toJson(),
-            Link(id=_id).toJson(),
-            TvType.TvSeries,
-            false
-        ) {
-            this.posterUrl = getImageUrl(poster_path ?: backdrop_path) ?: getBackupImageUrl(img)
-            addDub(last_updated_epi?.toIntOrNull())
-            addSub(totalEpisodes?.toIntOrNull())
+    private fun Element.toSearchResult(): SearchResponse? {
+        val href = fixUrl(this.selectFirst("a")?.attr("href") ?: return null)
+        val title = this.selectFirst("div.movie-item__title")?.text()?.trim() ?: return null
+        val posterUrl = fixUrlNull(this.selectFirst("img")?.attr("src"))
+        val quantity = this.selectFirst("div.movie-item__label")?.text() ?: return null
+        val episode =
+            this.selectFirst("span.ep-num")?.text()?.filter { it.isDigit() }?.toIntOrNull()
+
+        return newAnimeSearchResponse(title, href, TvType.TvSeries) {
+            addQuality(quantity)
+            addDub(episode)
+            this.posterUrl = posterUrl
         }
     }
 
-    override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
-
     override suspend fun search(query: String): List<SearchResponse> {
-        val res = app.get("$mainAPI/data/search/?lang=2&keyword=$query", referer = "$mainUrl/").text
-        return tryParseJson<ArrayList<Media>>(res)?.mapNotNull {
-            it.toSearchResponse()
-        } ?: throw ErrorLoadingException()
+        val document = app.post(
+            "$mainUrl/index.php?do=search", data = mapOf(
+                "do" to "search",
+                "subaction" to "search",
+                "search_start" to "0",
+                "full_search" to "0",
+                "result_from" to "1",
+                "story" to query
+            )
+        ).document
+        return document.select("div#dle-content div.movie-item").mapNotNull {
+            it.toSearchResult()
+        }
     }
 
     override suspend fun load(url: String): LoadResponse? {
-        val id = parseJson<Link>(url).id
+        val document = app.get(url).document
 
-        val res = app.get("$mainAPI/data/watch/?_id=$id", referer = "$mainUrl/")
-            .parsedSafe<MediaDetail>() ?: throw ErrorLoadingException()
-        val type = if (res.tv == 1) "tv" else "movie"
+        val title = document.selectFirst("h1.inner-page__title")?.text()?.trim() ?: return null
+        val poster = fixUrlNull(document.selectFirst("div.inner-page__img img")?.attr("src"))
+        val tags = document.select("ul.inner-page__list li:contains(Genre:) a").map { it.text() }
+        val year = document.selectFirst("ul.inner-page__list li:contains(Jahr:)")?.ownText()
+            ?.toIntOrNull()
+        val description = document.select("div.inner-page__text.text.clearfix").text()
+        val duration = document.selectFirst("ul.inner-page__list li:contains(Zeit:)")?.ownText()
+            ?.filter { it.isDigit() }?.toIntOrNull()
+        val actors = document.selectFirst("ul.inner-page__list li:contains(Darsteller:)")?.ownText()
+            ?.split(",")?.map { it.trim() }
+        val recommendations = document.select("div.section__content.section__items div.movie-item")
+            .mapNotNull { it.toSearchResult() }
+        val type = if (document.select("ul.series-select-menu.ep-menu")
+                .isNullOrEmpty()
+        ) TvType.Movie else TvType.TvSeries
+        val trailer = document.selectFirst("div.stretch-free-width.mirrors span:contains(Trailer)")
+            ?.attr("data-link") ?: document.selectFirst("div#trailer iframe")?.attr("src")
 
-        val recommendations =
-            app.get("$mainAPI/data/related_movies/?lang=2&cat=$type&_id=$id&server=0").text.let {
-                tryParseJson<List<Media>>(it)
-            }?.mapNotNull {
-                it.toSearchResponse()
+        if (type == TvType.Movie) {
+            val link = document.select("div.stretch-free-width.mirrors span").map {
+                fixUrl(it.attr("data-link"))
             }
-
-        return if (type == "tv") {
-            val episodes = res.streams?.groupBy { it.e.toString().toIntOrNull() }?.mapNotNull { eps ->
-                val epsNum = eps.key
-                val epsLink = eps.value.map { it.stream }.toJson()
-                Episode(epsLink, episode = epsNum)
-            } ?: emptyList()
-            newTvSeriesLoadResponse(
-                res.title ?: res.original_title ?: return null,
-                url,
-                TvType.TvSeries,
-                episodes
-            ) {
-                this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
-                this.year = res.year
-                this.plot = res.storyline ?: res.overview
-                this.tags = listOf(res.genres ?: "")
+            return newMovieLoadResponse(title, url, TvType.Movie, Links(link).toJson()) {
+                this.posterUrl = poster
+                this.year = year
+                plot = description
+                this.tags = tags
+                this.duration = duration
                 this.recommendations = recommendations
+                addActors(actors)
+                addTrailer(trailer)
             }
         } else {
-            newMovieLoadResponse(
-                res.original_title ?: res.title ?: return null,
-                url,
-                TvType.Movie,
-                res.streams?.map { Link(it.stream) }?.toJson()
-            ) {
-                this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
-                this.year = res.year
-                this.plot = res.storyline ?: res.overview
-                this.tags = listOf(res.genres ?: "")
+            val episodes = document.select("ul.series-select-menu.ep-menu li[id*=serie]").map {
+                val name = it.selectFirst("a")?.text()
+                val link = it.select("li").map { eps ->
+                    fixUrl(eps.select("a").attr("data-link"))
+                }
+                Episode(
+                    Links(link).toJson(),
+                    name
+                )
+            }
+            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes = episodes) {
+                this.posterUrl = poster
+                this.year = year
+                plot = description
+                this.tags = tags
+                this.duration = duration
                 this.recommendations = recommendations
+                addActors(actors)
+                addTrailer(trailer)
             }
         }
+    }
 
+    private suspend fun invokeLocalSource(
+        url: String,
+        callback: (ExtractorLink) -> Unit
+    ) {
+        val script = app.get(url, referer = "$mainUrl/").document.select("script")
+            .find { it.data().contains("eval(function(p,a,c,k,e,d)") }?.data()
+        val data = getAndUnpack(script ?: return).substringAfter("sources:[").substringBefore("],")
+            .replace("file", "\"file\"")
+            .replace("label", "\"label\"")
+
+        tryParseJson<List<Sources>>("[$data]")?.map { link ->
+            val source = "Supervideo"
+            if (link.file?.contains(".m3u8") == true) {
+                M3u8Helper.generateM3u8(
+                    "$source (Main)",
+                    link.file,
+                    "$mainServer/"
+                ).forEach(callback)
+            } else {
+                callback.invoke(
+                    ExtractorLink(
+                        "$source (Backup)",
+                        "$source (Backup)",
+                        link.file ?: return@map null,
+                        "$mainServer/",
+                        getQualityFromName(link.label)
+                    )
+                )
+            }
+        }
     }
 
     override suspend fun loadLinks(
@@ -127,82 +166,26 @@ open class XCine : MainAPI() {
         callback: (ExtractorLink) -> Unit
     ): Boolean {
 
-        val loadData = parseJson<List<Link>>(data)
-        loadData.apmap {
-            val link = fixUrlNull(it.link) ?: return@apmap null
-            if (link.startsWith("https://dl.streamcloud")) {
-                callback.invoke(
-                    ExtractorLink(
-                        this.name,
-                        this.name,
-                        link,
-                        "",
-                        Qualities.Unknown.value
-                    )
-                )
-            } else {
-                loadExtractor(
-                    link,
-                    "$mainUrl/",
-                    subtitleCallback,
-                    callback
-                )
+        parseJson<Links>(data).url?.apmap { link ->
+            safeApiCall {
+                if (link.startsWith(mainServer)) {
+                    invokeLocalSource(link, callback)
+                } else {
+                    loadExtractor(link, "$mainUrl/", subtitleCallback, callback)
+                }
             }
         }
 
         return true
     }
 
-    data class Link(
-        val link: String? = null,
-        val id: String? = null,
+    private data class Links(
+        val url: List<String>? = arrayListOf(),
     )
 
-    data class Season(
-        @JsonProperty("_id") val _id: String? = null,
-        @JsonProperty("s") val s: Int? = null,
-        @JsonProperty("title") val title: String? = null,
-        @JsonProperty("year") val year: Int? = null,
-        @JsonProperty("streams") val streams: ArrayList<Streams>? = arrayListOf(),
-    )
-
-    data class Streams(
-        @JsonProperty("_id") val _id: String? = null,
-        @JsonProperty("stream") val stream: String? = null,
-        @JsonProperty("e") val e: Any? = null,
-        @JsonProperty("e_title") val e_title: String? = null,
-    )
-
-    data class MediaDetail(
-        @JsonProperty("_id") val _id: String? = null,
-        @JsonProperty("tv") val tv: Int? = null,
-        @JsonProperty("original_title") val original_title: String? = null,
-        @JsonProperty("title") val title: String? = null,
-        @JsonProperty("poster_path") val poster_path: String? = null,
-        @JsonProperty("backdrop_path") val backdrop_path: String? = null,
-        @JsonProperty("imdb_id") val imdb_id: String? = null,
-        @JsonProperty("year") val year: Int? = null,
-        @JsonProperty("rating") val rating: String? = null,
-        @JsonProperty("genres") val genres: String? = null,
-        @JsonProperty("storyline") val storyline: String? = null,
-        @JsonProperty("overview") val overview: String? = null,
-        @JsonProperty("streams") val streams: ArrayList<Streams>? = arrayListOf(),
-    )
-
-    data class Media(
-        @JsonProperty("_id") val _id: String? = null,
-        @JsonProperty("original_title") val original_title: String? = null,
-        @JsonProperty("title") val title: String? = null,
-        @JsonProperty("poster_path") val poster_path: String? = null,
-        @JsonProperty("backdrop_path") val backdrop_path: String? = null,
-        @JsonProperty("img") val img: String? = null,
-        @JsonProperty("imdb_id") val imdb_id: String? = null,
-        @JsonProperty("totalEpisodes") val totalEpisodes: String? = null,
-        @JsonProperty("last_updated_epi") val last_updated_epi: String? = null,
-    )
-
-    data class MediaResponse(
-        @JsonProperty("movies") val movies: ArrayList<Media>? = arrayListOf(),
+    private data class Sources(
+        @JsonProperty("file") val file: String? = null,
+        @JsonProperty("label") val label: String? = null
     )
 
 }
