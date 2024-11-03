@@ -1,12 +1,15 @@
 package com.hexated
 
-import com.lagradost.cloudstream3.mainPageOf
-import com.lagradost.cloudstream3.utils.* // Stelle sicher, dass du alle notwendigen Utils importierst
-import com.lagradost.cloudstream3.LoadResponse
+import com.fasterxml.jackson.annotation.JsonProperty
+import com.lagradost.cloudstream3.*
 import com.lagradost.cloudstream3.LoadResponse.Companion.addImdbId
 import com.lagradost.cloudstream3.LoadResponse.Companion.addTMDbId
+import com.lagradost.cloudstream3.LoadResponse.Companion.addTrailer
+import com.lagradost.cloudstream3.utils.*
+import com.lagradost.cloudstream3.utils.AppUtils.parseJson
+import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.Jsoup
-
+import kotlin.math.roundToInt
 class Cineclix : Moflix() {
     override var name = "CineClix"
     override var mainUrl = "https://api.movie4k.sx"
