@@ -152,7 +152,7 @@ open class KinoKiste : MainAPI() {
         }
         linkPairs.amap {
             when (it.first) {
-                "supervideo" -> {}
+               "supervideo" -> SuperVideoExtractor().getUrl(it.second)?.amap { callback.invoke(it) }
                 "dropload" -> Dropload().getUrl(it.second, it.second)?.amap { callback.invoke(it) }
                 "mixdrop" -> loadExtractor(it.second, subtitleCallback, callback)
                 "doodstream" ->
@@ -207,5 +207,32 @@ open class KinoKiste : MainAPI() {
                     )
             )
         }
+    }
+    class SuperVideoExtractor : ExtractorApi() {
+    override var name = "SuperVideo"
+    override var mainUrl = "https://supervideo.cc" // Haupt-URL bleibt hier für .cc, aber flexibel für .tv
+    override val requiresReferer = false
+
+    override fun getExtractorUrl(id: String): String {
+        return "$mainUrl/v/$id"
+    }
+
+    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+        val res = app.get(url).text
+        val videoUrl = Regex("https://(supervideo.cc|supervideo.tv)/[^']*").find(res)?.value
+            ?: return null
+        val quality = Regex("\\d{3,4}p").find(res)?.value
+
+        return listOf(
+            ExtractorLink(
+                this.name,
+                this.name,
+                videoUrl,
+                mainUrl,
+                getQualityFromName(quality),
+                false
+            )
+        )
+    }
     }
 }
