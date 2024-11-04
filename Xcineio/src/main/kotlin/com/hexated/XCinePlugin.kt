@@ -24,7 +24,6 @@ class FilmCloud : Plugin() {
         registerExtractorAPI(MetaGnathTuggers())
         registerExtractorAPI(FileLions())
         registerExtractorAPI(Kinogeru())
-        registerExtractorAPI(StreamTapeAdblockuser())
         registerExtractorAPI(StreamTapeTo())
         registerExtractorAPI(Mixdrp())
         registerExtractorAPI(DoodReExtractor())
