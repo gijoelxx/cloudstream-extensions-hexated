@@ -1,4 +1,3 @@
-
 package com.hexated
 
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
@@ -6,11 +5,31 @@ import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 
 @CloudstreamPlugin
-class XCinePlugin: Plugin() {
+class FilmCloud : Plugin() {
     override fun load(context: Context) {
-        // All providers should be added in this manner. Please don't edit the providers list directly.
-        registerMainAPI(XCine())
+        // Alle Provider sollten auf diese Weise hinzugefügt werden.
+        // Bitte bearbeite die Provider-Liste nicht direkt.
+        registerMainAPI(Aniworld())
+        registerMainAPI(Xcinetop())
         registerMainAPI(Movie4k())
+        registerMainAPI(Movie2k())
+        registerMainAPI(KinoKiste())
+        registerMainAPI(FreeTVProvider())
+        registerMainAPI(Kinoger())
+        registerMainAPI(FilmpalastProvider())
+        registerMainAPI(Moflix())
+
+        // Alle Extractor-APIs werden hier registriert
+        registerExtractorAPI(MoflixClick())
+        registerExtractorAPI(Highstream())
+        registerExtractorAPI(MoflixFans())
+        registerExtractorAPI(MoflixLink())
+        registerExtractorAPI(Doodstream())
+        registerExtractorAPI(StreamHubGg())
+        registerExtractorAPI(VoeSx())
+        registerExtractorAPI(MetaGnathTuggers())
+        registerExtractorAPI(FileLions())
+        registerExtractorAPI(Kinogeru())
         registerExtractorAPI(StreamTapeAdblockuser())
         registerExtractorAPI(StreamTapeTo())
         registerExtractorAPI(Mixdrp())
