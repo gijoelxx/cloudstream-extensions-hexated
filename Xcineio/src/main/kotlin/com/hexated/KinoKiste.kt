@@ -91,51 +91,38 @@ override suspend fun load(url: String): LoadResponse? {
     val res = app.get(url)
     if (!res.code.equals(200)) throw ErrorLoadingException("Unable to fetch page")
 
-    // Titel und Beschreibung der Serie
     val title = res.document.selectFirst("#title .title")?.text()
         ?: throw ErrorLoadingException("Unable to read title")
-    val desc = res.document.selectFirst("meta[itemprop=description]")?.attr("content")
+    val desc = res.document.selectFirst("meta[itemprop='description']")?.attr("content")
     val poster = mainUrl.plus(res.document.selectFirst("img#poster_path_large")?.attr("src"))
     val bgStyle = res.document.selectFirst("#dle-content > style[media=screen]")?.html() ?: ""
-    val bgPoster = mainUrl + Regex("url\\"(.*?)\"\").find(bgStyle)?.destructured?.component1()
-    val genres = res.document.select("#longInfo div div:nth-child(3) div a").mapNotNull { it.text() }
+    val bgPoster = mainUrl.plus(Regex("url\\"(.*?)\"\").find(bgStyle)?.destructured?.component1())
     
-    // Serie-Daten und Episoden
+    // Genres
+    val genres = res.document.select("#longInfo div div:nth-child(3) div a").mapNotNull { it.text() }
     val seriesData = res.document.selectFirst("#details .serie-menu .tt_series")
     val imdbLink = res.document.selectFirst("a[href*=imdb]")?.attr("href") ?: ""
     val imdbId = Regex("/(tt.*)/").find(imdbLink)?.destructured?.component1()
 
-    // Überprüfung, ob es Episoden gibt
+    // Überprüfen, ob es sich um eine Serie handelt
     if (seriesData == null) {
-        throw ErrorLoadingException("No series data found")
+        val iFrameUrl = res.document.selectFirst("#info iframe[width]")?.attr("src")
+        return newMovieLoadResponse(title, url, TvType.Movie, iFrameUrl) {
+            this.plot = desc
+            this.posterUrl = poster
+            this.backgroundPosterUrl = bgPoster
+            this.tags = genres
+            addImdbId(imdbId)
+        }
     }
 
-    // Extraktion der Episodeninformationen
-    val episodes = seriesData.select("li").mapNotNull { episodeElement ->
-        val episodeNum = episodeElement.attr("data-num") // e.g., "1x1"
-        val (season, episode) = episodeNum.split("x").map { it.toInt() } // Split season and episode numbers
-        
-        // Links für diese Episode sammeln
-        val mirrors = episodeElement.select("a[data-link]").map { linkElement ->
-            val provider = linkElement.text() // z.B. "Supervideo"
-            val streamLink = linkElement.attr("data-link") // die Streaming-URL
-            // Hier könnten wir auch die jeweilige ID oder andere Informationen speichern
-            newEpisode(streamLink) { 
-                this.name = "${title} - S${season}E${episode}" // Episodenname
-                this.season = season
-                this.episode = episode
-            }
-        }
-
-        // Rückgabe einer Episode mit ihren Stream-Links
-        if (mirrors.isNotEmpty()) {
-            newEpisode(mirrors.joinToString(", ")) {
-                this.name = "${title} - S${season}E${episode}"
-                this.season = season
-                this.episode = episode
-            }
-        } else {
-            null
+    // Episoden auslesen
+    val episodes = seriesData.select("ul > li").map {
+        val (season, episode) = it.select("a").attr("data-num").split("x")
+        newEpisode(it.selectFirst("div.mirrors")?.html()) {
+            this.name = it.selectFirst("a")?.attr("data-title")
+            this.season = season.toInt()
+            this.episode = episode.toInt()
         }
     }
 
@@ -147,7 +134,8 @@ override suspend fun load(url: String): LoadResponse? {
         addImdbId(imdbId)
     }
 }
-    override suspend fun loadLinks(
+        // Links für diese Episode sammeln
+  override suspend fun loadLinks(
             data: String,
             isCasting: Boolean,
             subtitleCallback: (SubtitleFile) -> Unit,
