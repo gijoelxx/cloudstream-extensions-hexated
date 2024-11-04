@@ -250,4 +250,5 @@ class SuperVideoExtractor : ExtractorApi() {
             )
         )
     }
+ }
 }
