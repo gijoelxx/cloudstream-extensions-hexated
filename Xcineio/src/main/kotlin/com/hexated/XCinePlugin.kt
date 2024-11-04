@@ -17,13 +17,8 @@ class FilmCloud : Plugin() {
         registerMainAPI(FreeTVProvider())
         registerMainAPI(Kinoger())
         registerMainAPI(FilmpalastProvider())
-        registerMainAPI(Moflix())
 
         // Alle Extractor-APIs werden hier registriert
-        registerExtractorAPI(MoflixClick())
-        registerExtractorAPI(Highstream())
-        registerExtractorAPI(MoflixFans())
-        registerExtractorAPI(MoflixLink())
         registerExtractorAPI(Doodstream())
         registerExtractorAPI(StreamHubGg())
         registerExtractorAPI(VoeSx())
