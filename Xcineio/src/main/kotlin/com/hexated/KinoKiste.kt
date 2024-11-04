@@ -152,12 +152,10 @@ override suspend fun loadLinks(
 
     linkPairs.amap {
         when (it.first) {
-            "supervideo" -> SuperVideoExtractor().getUrl(it.second, it.second)?.amap { callback.invoke(it) }
+            "supervideo" -> SuperVideoExtractor (getBaseUrl(it.second)).getUrl(it.second, it.second)?.amap { callback.invoke(it) }
             "dropload" -> Dropload().getUrl(it.second, it.second)?.amap { callback.invoke(it) }
-            "mixdrop" -> MixdropExtractor().getUrl(it.second, it.second)?.amap { callback.invoke(it) }
-            "doodstream" -> AnyDoodStreamExtractor(getBaseUrl(it.second))
-                                .getUrl(it.second, it.second)
-                                ?.amap { callback.invoke(it) }
+            "mixdrop" -> MixdropExtractor(getBaseUrl(it.second it.second)?.amap { callback.invoke(it) }
+            "doodstream" -> AnyDoodStreamExtractor(getBaseUrl(it.second)).getUrl(it.second, it.second)?.amap { callback.invoke(it) }
             else -> {}
         }
     }
@@ -252,7 +250,6 @@ open class AnyDoodStreamExtractor(domain: String) : ExtractorApi() {
     }
 }
 
-// Extractor for SuperVideo
 class SuperVideoExtractor : ExtractorApi() {
     override var name = "SuperVideo"
     override var mainUrl = "https://supervideo.tv"
@@ -260,9 +257,12 @@ class SuperVideoExtractor : ExtractorApi() {
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
         val response = app.get(url).text
-        val videoUrl = Regex("""file":"(https[^"]+)""").find(response)?.groupValues?.get(1)
-            ?: return null
-        val quality = Regex("""label":"(\d{3,4}p)""").find(response)?.groupValues?.get(1) ?: "Unknown"
+
+        // Versuche, die Video-URL mit verschiedenen Ansätzen zu extrahieren
+        val videoUrl = extractVideoUrl(response) ?: return null
+
+        // Versuche, die Videoqualität zu extrahieren
+        val quality = extractQuality(response) ?: "Unknown"
 
         return listOf(
             ExtractorLink(
@@ -275,5 +275,43 @@ class SuperVideoExtractor : ExtractorApi() {
             )
         )
     }
- }
+
+    private fun extractVideoUrl(response: String): String? {
+        // Versuche, die Video-URL mit mehreren Regex-Mustern zu finden
+        val patterns = listOf(
+            """file\s*:\s*["'](https?://[^"']+)["']""", // Standard: file: "URL"
+            """src=["'](https?://[^"']+)["']""",        // src-Attribute in Tags
+            """data-src=["'](https?://[^"']+)["']""",  // data-src-Attribute in Tags
+            """video_url\s*:\s*["'](https?://[^"']+)["']""" // Video URL in anderen Variablen
+        )
+
+        for (pattern in patterns) {
+            val match = Regex(pattern).find(response)
+            if (match != null) {
+                return match.groupValues[1]
+            }
+        }
+
+        // Fallback: Suche nach 'http' Links
+        val fallbackMatch = Regex("""(https?://[^\s]+)""").find(response)
+        return fallbackMatch?.value
+    }
+
+    private fun extractQuality(response: String): String? {
+        // Versuche, die Qualität mit verschiedenen Ansätzen zu extrahieren
+        val qualityPatterns = listOf(
+            """label\s*:\s*["']?(\d{3,4}p)["']?""", // label: "360p"
+            """quality\s*:\s*["']?(\d{3,4}p)["']?""" // quality: "360p"
+        )
+
+        for (pattern in qualityPatterns) {
+            val match = Regex(pattern).find(response)
+            if (match != null) {
+                return match.groupValues[1]
+            }
+        }
+
+        return null // Wenn keine Qualität gefunden wird
+    }
+}
 }
