@@ -88,88 +88,75 @@ open class KinoKiste : MainAPI() {
         return list
     }
 
-
-    
-
 override suspend fun load(url: String): LoadResponse? {
-        val res = app.get(url)
-        if (!res.code.equals(200)) throw ErrorLoadingException("Unable to fetch page")
-        val title =
-                res.document.selectFirst("#title span")?.text()
-                        ?: throw ErrorLoadingException("Unable to read title")
-        val desc = res.document.selectFirst("#storyline p")?.text()
-        val poster = mainUrl.plus(res.document.selectFirst("img#poster_path_large")?.attr("src"))
-        val bgStyle = res.document.selectFirst("#dle-content > style[media=screen]")?.html() ?: ""
-        val bgPoster =
-                mainUrl.plus(Regex("url\\(\"(.*)\"\\)").find(bgStyle)?.destructured?.component1())
-        val genres =
-                res.document.select("#longInfo div div:nth-child(3) div a").mapNotNull { it.text() }
-        val seriesData = res.document.selectFirst("div.serie-menu")
-        val imdbLink = res.document.selectFirst("a[href*=imdb]")?.attr("href") ?: ""
-        val imdbId = Regex("/(tt.*)/").find(imdbLink)?.destructured?.component1()
-
-        if (seriesData == null) {
-            val iFrameUrl = res.document.selectFirst("#info iframe[width]")?.attr("src")
-            return newMovieLoadResponse(title, url, TvType.Movie, iFrameUrl) {
-                this.plot = desc
-                this.posterUrl = poster
-                this.backgroundPosterUrl = bgPoster
-                this.tags = genres
-                addImdbId(imdbId)
-            }
-        }
-        val episodes =
-                seriesData.select("div.tt_series ul > li").map {
-                    val (season, episode) = it.select("a").attr("data-num").split("x")
-                    newEpisode(it.selectFirst("div.mirrors")?.html()) {
-                        this.name = it.selectFirst("a")?.attr("data-title")
-                        this.season = season.toInt()
-                        this.episode = episode.toInt()
-                    }
-                }
-        return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+    val res = app.get(url)
+    if (!res.code.equals(200)) throw ErrorLoadingException("Unable to fetch page")
+    
+    val title = res.document.selectFirst("#title .title")?.text()
+        ?: throw ErrorLoadingException("Unable to read title")
+    val desc = res.document.selectFirst("meta[itemprop='description']")?.attr("content")
+    val poster = mainUrl.plus(res.document.selectFirst("img#poster_path_large")?.attr("src"))
+    val bgPoster = mainUrl.plus(res.document.selectFirst(".bgPoster")?.attr("src"))
+    
+    val genres = res.document.select("#longInfo .genres a").mapNotNull { it.text() }
+    val imdbId = res.document.selectFirst("a[href*=imdb]")?.attr("href")?.substringAfterLast("/")
+    
+    val seriesData = res.document.selectFirst(".serie-menu")
+    return if (seriesData == null) {
+        newMovieLoadResponse(title, url, TvType.Movie) {
             this.plot = desc
             this.posterUrl = poster
             this.backgroundPosterUrl = bgPoster
             this.tags = genres
             addImdbId(imdbId)
         }
+    } else {
+        val episodes = seriesData.select("li").map { episodeElement ->
+            val seasonEpisode = episodeElement.attr("data-num")
+            val (season, episode) = seasonEpisode.split("x")
+            newEpisode(episodeElement.html()) {
+                this.name = episodeElement.selectFirst("a")?.text()
+                this.season = season.toInt()
+                this.episode = episode.toInt()
+            }
+        }
+        newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
+            this.plot = desc
+            this.posterUrl = poster
+            this.backgroundPosterUrl = bgPoster
+            this.tags = genres
+            addImdbId(imdbId)
+        }
+    }
 }
-  
-    // Links für diese Episode sammeln
-  override suspend fun loadLinks(
-            data: String,
-            isCasting: Boolean,
-            subtitleCallback: (SubtitleFile) -> Unit,
-            callback: (ExtractorLink) -> Unit
-    ): Boolean {
-        var linkPairs = listOf<Pair<String, String>>()
-        if (data.contains(mainUrl)) {
-            var mirrorsData = Jsoup.parse(data.removeSuffix("$mainUrl/"))
-            mirrorsData.select("a").forEach {
-                linkPairs += it.attr("data-m") to it.attr("data-link")
-            }
-        } else {
-            val res = app.get(data).document
-            res.select("li[data-link]").forEach {
-                linkPairs += it.text() to "https:".plus(it.attr("data-link"))
-            }
+override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+): Boolean {
+    val linkPairs = mutableListOf<Pair<String, String>>()
+
+    val mirrorsData = Jsoup.parse(data)
+    mirrorsData.select("#details .serie-menu .tt_series li").forEach { episodeElement ->
+        episodeElement.select("a[data-link]").forEach { linkElement ->
+            val linkType = linkElement.attr("data-m")
+            val linkUrl = linkElement.attr("data-link")
+            linkPairs.add(linkType to linkUrl)
         }
-        linkPairs.amap {
-            when (it.first) {
-               "supervideo" -> SuperVideoExtractor().getUrl(it.second)?.amap { callback.invoke(it) }
-                "dropload" -> Dropload().getUrl(it.second, it.second)?.amap { callback.invoke(it) }
-                "mixdrop" -> loadExtractor(it.second, subtitleCallback, callback)
-                "doodstream" ->
-                        AnyDoodStreamExtractor(getBaseUrl(it.second))
-                                .getUrl(it.second, it.second)
-                                ?.amap { callback.invoke(it) }
-                else -> {}
-            }
-        }
-        return true
     }
 
+    linkPairs.amap {
+        when (it.first) {
+            "supervideo" -> SuperVideoExtractor().getUrl(it.second)?.amap { callback.invoke(it) }
+            "dropload" -> Dropload().getUrl(it.second, it.second)?.amap { callback.invoke(it) }
+            "mixdrop" -> loadExtractor(it.second, subtitleCallback, callback)
+            "doodstream" -> AnyDoodStreamExtractor(getBaseUrl(it.second)).getUrl(it.second, it.second)?.amap { callback.invoke(it) }
+            else -> {}
+        }
+    }
+    return true
+}
     // util methods
     fun getBaseUrl(url: String): String {
         return URI(url).let { "${it.scheme}://${it.host}" }
@@ -241,3 +228,5 @@ override suspend fun load(url: String): LoadResponse? {
     }
     }
 }
+    
+
