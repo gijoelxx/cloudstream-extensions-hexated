@@ -168,6 +168,31 @@ override suspend fun loadLinks(
 fun getBaseUrl(url: String): String {
     return URI(url).let { "${it.scheme}://${it.host}" }
 }
+// Extractor for Mixdrop
+class MixdropExtractor : ExtractorApi() {
+    override var name = "Mixdrop"
+    override var mainUrl = "https://mixdrop.co"
+    override val requiresReferer = false
+
+    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+        val response = app.get(url).text
+        // Beispiel: Extrahiere die Video-URL und die Qualität aus der Antwort
+        val videoUrl = Regex("""file":"(https[^"]+)""").find(response)?.groupValues?.get(1)
+            ?: return null
+        val quality = Regex("""label":"(\d{3,4}p)""").find(response)?.groupValues?.get(1) ?: "Unknown"
+
+        return listOf(
+            ExtractorLink(
+                name = this.name,
+                source = this.name,
+                url = videoUrl,
+                referer = mainUrl,
+                quality = getQualityFromName(quality),
+                isM3u8 = videoUrl.endsWith(".m3u8")
+            )
+        )
+    }
+}
 
 // Extractor for Dropload
 class Dropload : ExtractorApi() {
