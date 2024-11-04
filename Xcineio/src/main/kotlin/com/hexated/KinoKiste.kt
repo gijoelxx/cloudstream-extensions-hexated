@@ -251,20 +251,34 @@ open class AnyDoodStreamExtractor(domain: String) : ExtractorApi() {
     }
 }
 
-class SuperVideoExtractor : ExtractorApi() {
+open class SuperVideoExtractor : ExtractorApi() {
     override var name = "SuperVideo"
-    override var mainUrl = "https://supervideo.tv"
-    override val requiresReferer = false
+    override var mainUrl = "https://supervideo.cc"
+    override val requiresReferer = true
+
+    override fun getExtractorUrl(id: String): String {
+        return "$mainUrl/$id"
+    }
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val response = app.get(url).text
+        // Versuchen, die Seite abzurufen
+        val response = try {
+            app.get(url, referer = referer).text
+        } catch (e: Exception) {
+            throw ErrorLoadingException("Fehler beim Abrufen der Seite: ${e.message}")
+        }
 
-        // Versuche, die Video-URL mit verschiedenen Ansätzen zu extrahieren
-        val videoUrl = extractVideoUrl(response) ?: return null
+        // Debugging: Protokollieren der Antwort, um sicherzustellen, dass wir den richtigen Inhalt haben
+        println("Antwort von SuperVideo: $response")
 
-        // Versuche, die Videoqualität zu extrahieren
-        val quality = extractQuality(response) ?: "Unknown"
+        // Regex zum Extrahieren der Video-URL
+        val videoUrl = Regex("""file\s*:\s*"(https[^"]+)"""").find(response)?.groupValues?.get(1)
+            ?: throw ErrorLoadingException("Video-URL nicht gefunden.")
 
+        // Regex zur Extraktion der Qualität (wenn verfügbar)
+        val quality = Regex("""label\s*:\s*"(.*?)"""").find(response)?.groupValues?.get(1) ?: "Unbekannt"
+
+        // Rückgabe der Extraktorlinks
         return listOf(
             ExtractorLink(
                 name = this.name,
@@ -275,44 +289,6 @@ class SuperVideoExtractor : ExtractorApi() {
                 isM3u8 = videoUrl.endsWith(".m3u8")
             )
         )
-    }
-
-    private fun extractVideoUrl(response: String): String? {
-        // Versuche, die Video-URL mit mehreren Regex-Mustern zu finden
-        val patterns = listOf(
-            """file\s*:\s*["'](https?://[^"']+)["']""", // Standard: file: "URL"
-            """src=["'](https?://[^"']+)["']""",        // src-Attribute in Tags
-            """data-src=["'](https?://[^"']+)["']""",  // data-src-Attribute in Tags
-            """video_url\s*:\s*["'](https?://[^"']+)["']""" // Video URL in anderen Variablen
-        )
-
-        for (pattern in patterns) {
-            val match = Regex(pattern).find(response)
-            if (match != null) {
-                return match.groupValues[1]
-            }
-        }
-
-        // Fallback: Suche nach 'http' Links
-        val fallbackMatch = Regex("""(https?://[^\s]+)""").find(response)
-        return fallbackMatch?.value
-    }
-
-    private fun extractQuality(response: String): String? {
-        // Versuche, die Qualität mit verschiedenen Ansätzen zu extrahieren
-        val qualityPatterns = listOf(
-            """label\s*:\s*["']?(\d{3,4}p)["']?""", // label: "360p"
-            """quality\s*:\s*["']?(\d{3,4}p)["']?""" // quality: "360p"
-        )
-
-        for (pattern in qualityPatterns) {
-            val match = Regex(pattern).find(response)
-            if (match != null) {
-                return match.groupValues[1]
-            }
-        }
-
-        return null // Wenn keine Qualität gefunden wird
-    }
-}
+      }
+   }
 }
