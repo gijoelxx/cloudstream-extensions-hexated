@@ -46,46 +46,15 @@ open class FilmpalastProvider : MainAPI() {
     }
 
     override suspend fun load(url: String): LoadResponse {
-    val document = app.get(url).document.select("#content")
+        val document = app.get(url).document.select("#content")
 
-    val title = document.select("h2.rb.bgDark").text()
-    val imagePath = document.select(".detail.rb img.cover2").attr("src")
-    val description = document.select("span[itemprop=description]").text()
-    val details = document.select("detail-content-list li")
-    val year = details.first()?.html()?.split("<br>")?.getOrNull(1)?.filter { it.isDigit() }?.toIntOrNull()
-    val duration = details.select("em").first()?.ownText()?.filter { it.isDigit() }?.toIntOrNull()
+        val title = document.select("h2.rb.bgDark").text()
+        val imagePath = document.select(".detail.rb img.cover2").attr("src")
+        val description = document.select("span[itemprop=description]").text()
+        val details = document.select("detail-content-list li")
+        val year = details.first()?.html()?.split("<br>")?.getOrNull(1)?.filter { it.isDigit() }?.toIntOrNull()
+        val duration = details.select("em").first()?.ownText()?.filter { it.isDigit() }?.toIntOrNull()
 
-    // Check if this is a series with seasons and episodes
-    val seasonElements = document.select(".episode-links .season")
-    if (seasonElements.isNotEmpty()) {
-        // If series, parse episodes
-        val episodes = mutableListOf<Episode>()
-        seasonElements.forEach { season ->
-            val seasonNumber = season.selectFirst(".season-title")?.text()?.replace("Staffel ", "")?.toIntOrNull()
-            season.select("a.iconPlay").forEach { episodeElement ->
-                val episodeUrl = episodeElement.attr("href")
-                val episodeTitle = episodeElement.text()
-                val episodeNumber = episodeTitle.replace(Regex(".*S\\d+E(\\d+).*"), "$1").toIntOrNull()
-
-                if (seasonNumber != null && episodeNumber != null) {
-                    episodes.add(
-                        Episode(
-                            url = "$mainUrl$episodeUrl",
-                            name = episodeTitle,
-                            season = seasonNumber,
-                            episode = episodeNumber
-                        )
-                    )
-                }
-            }
-        }
-        return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes).apply {
-            this.posterUrl = "$mainUrl$imagePath"
-            this.plot = description
-            this.year = year
-        }
-    } else {
-        // If it's a movie
         val links = document.select(".currentStreamLinks a.iconPlay").mapNotNull {
             it.attr("href") ?: it.attr("data-player-url")
         }
@@ -96,19 +65,18 @@ open class FilmpalastProvider : MainAPI() {
             this.year = year
         }
     }
-}
 
-override suspend fun loadLinks(
-    data: String,
-    isCasting: Boolean,
-    subtitleCallback: (SubtitleFile) -> Unit,
-    callback: (ExtractorLink) -> Unit
-): Boolean {
-    val links = parseJson<List<String>>(data)
-    links.apmap {
-        val link = fixUrlNull(it) ?: return@apmap null
-        loadExtractor(link, referer = "$mainUrl/", subtitleCallback, callback) // `referer` statt `url`
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        val links = parseJson<List<String>>(data)
+        links.apmap {
+            val link = fixUrlNull(it) ?: return@apmap null
+            loadExtractor(link, "$mainUrl/", subtitleCallback, callback)
+        }
+        return links.isNotEmpty()
     }
-    return links.isNotEmpty()
-}
 }
