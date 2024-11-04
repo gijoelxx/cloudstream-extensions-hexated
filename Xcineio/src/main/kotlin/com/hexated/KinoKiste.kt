@@ -47,6 +47,7 @@ open class KinoKiste : MainAPI() {
             mainPageOf(
                     "$mainUrl/filme/" to "Filme",
                     "$mainUrl/kinofilme/" to "Filme im Kino",
+                    "$mainUrl/serien/" to "Serien",
                     "$mainUrl/drama/" to "Drama Filme",
                     "$mainUrl/familie/" to "Familien Filme",
                     "$mainUrl/fantasy/" to "Fantasy Filme",
@@ -145,7 +146,8 @@ override suspend fun load(url: String): LoadResponse? {
         var linkPairs = listOf<Pair<String, String>>()
         if (data.contains(mainUrl)) {
             var mirrorsData = Jsoup.parse(data.removeSuffix("$mainUrl/"))
-            mirrorsData.select("a[data-link]").forEach { linkPairs += it.attr("data-m") to it.attr("data-link")
+            mirrorsData.select("a").forEach {
+                linkPairs += it.attr("data-m") to it.attr("data-link")
             }
         } else {
             val res = app.get(data).document
