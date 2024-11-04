@@ -55,14 +55,46 @@ open class FilmpalastProvider : MainAPI() {
         val year = details.first()?.html()?.split("<br>")?.getOrNull(1)?.filter { it.isDigit() }?.toIntOrNull()
         val duration = details.select("em").first()?.ownText()?.filter { it.isDigit() }?.toIntOrNull()
 
-        val links = document.select(".currentStreamLinks a.iconPlay").mapNotNull {
-            it.attr("href") ?: it.attr("data-player-url")
-        }
-        return newMovieLoadResponse(title, url, TvType.Movie, links.toJson()).apply {
-            this.posterUrl = "$mainUrl$imagePath"
-            this.plot = description
-            this.duration = duration
-            this.year = year
+        // Check if this is a series with seasons and episodes
+        val seasonElements = document.select(".episode-links .season")
+        if (seasonElements.isNotEmpty()) {
+            // If series, parse episodes
+            val episodes = mutableListOf<Episode>()
+            seasonElements.forEach { season ->
+                val seasonNumber = season.selectFirst(".season-title")?.text()?.replace("Staffel ", "")?.toIntOrNull()
+                season.select("a.iconPlay").forEach { episodeElement ->
+                    val episodeUrl = episodeElement.attr("href")
+                    val episodeTitle = episodeElement.text()
+                    val episodeNumber = episodeTitle.replace(Regex(".*S\\d+E(\\d+).*"), "$1").toIntOrNull()
+                    
+                    if (seasonNumber != null && episodeNumber != null) {
+                        episodes.add(
+                            Episode(
+                                url = "$mainUrl$episodeUrl",
+                                name = episodeTitle,
+                                season = seasonNumber,
+                                episode = episodeNumber
+                            )
+                        )
+                    }
+                }
+            }
+            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes).apply {
+                this.posterUrl = "$mainUrl$imagePath"
+                this.plot = description
+                this.year = year
+            }
+        } else {
+            // If it's a movie
+            val links = document.select(".currentStreamLinks a.iconPlay").mapNotNull {
+                it.attr("href") ?: it.attr("data-player-url")
+            }
+            return newMovieLoadResponse(title, url, TvType.Movie, links.toJson()).apply {
+                this.posterUrl = "$mainUrl$imagePath"
+                this.plot = description
+                this.duration = duration
+                this.year = year
+            }
         }
     }
 
