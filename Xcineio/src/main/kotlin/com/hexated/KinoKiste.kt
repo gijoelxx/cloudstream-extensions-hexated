@@ -97,7 +97,7 @@ override suspend fun load(url: String): LoadResponse? {
     val desc = res.document.selectFirst("meta[itemprop=description]")?.attr("content")
     val poster = mainUrl.plus(res.document.selectFirst("img#poster_path_large")?.attr("src"))
     val bgStyle = res.document.selectFirst("#dle-content > style[media=screen]")?.html() ?: ""
-    val bgPoster = mainUrl.plus(Regex("url\\"(.*)\"\").find(bgStyle)?.destructured?.component1())
+    val bgPoster = mainUrl + Regex("url\\"(.*?)\"\").find(bgStyle)?.destructured?.component1()
     val genres = res.document.select("#longInfo div div:nth-child(3) div a").mapNotNull { it.text() }
     
     // Serie-Daten und Episoden
