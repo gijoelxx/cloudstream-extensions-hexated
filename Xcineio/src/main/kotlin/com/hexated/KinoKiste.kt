@@ -88,65 +88,55 @@ open class KinoKiste : MainAPI() {
         return list
     }
 
-override suspend fun load(url: String): LoadResponse? {
-    val res = app.get(url)
-    if (res.code != 200) throw ErrorLoadingException("Unable to fetch page")
 
-    val title = res.document.selectFirst("#title .title")?.text()
-        ?: throw ErrorLoadingException("Unable to read title")
-    val desc = res.document.selectFirst("meta[itemprop='description']")?.attr("content")
-    val poster = mainUrl.plus(res.document.selectFirst("img#poster_path_large")?.attr("src") ?: "")
-    val bgStyle = res.document.selectFirst("#dle-content > style[media=screen]")?.html() ?: "")
-    val bgPoster = mainUrl.plus(Regex("url\\"(.*?)\"\").find(bgStyle)?.destructured?.component1() ?: "")
     
-    // Genres
-    val genres = res.document.select("#longInfo div div:nth-child(3) div a").mapNotNull { it.text() }
-    val seriesData = res.document.selectFirst("#details .serie-menu .tt_series")
-    val imdbLink = res.document.selectFirst("a[href*=imdb]")?.attr("href") ?: ""
-    val imdbId = Regex("/(tt.*)/").find(imdbLink)?.destructured?.component1() ?: ""
 
-    // Überprüfen, ob es sich um eine Serie handelt
-    if (seriesData == null) {
-        val iFrameUrl = res.document.selectFirst("#info iframe[width]")?.attr("src") ?: ""
-        return newMovieLoadResponse(title, url, TvType.Movie, iFrameUrl) {
+override suspend fun load(url: String): LoadResponse? {
+        val res = app.get(url)
+        if (!res.code.equals(200)) throw ErrorLoadingException("Unable to fetch page")
+        val title =
+                res.document.selectFirst("#title span")?.text()
+                        ?: throw ErrorLoadingException("Unable to read title")
+        val desc = res.document.selectFirst("#storyline p")?.text()
+        val poster = mainUrl.plus(res.document.selectFirst("img#poster_path_large")?.attr("src"))
+        val bgStyle = res.document.selectFirst("#dle-content > style[media=screen]")?.html() ?: ""
+        val bgPoster =
+                mainUrl.plus(Regex("url\\(\"(.*)\"\\)").find(bgStyle)?.destructured?.component1())
+        val genres =
+                res.document.select("#longInfo div div:nth-child(3) div a").mapNotNull { it.text() }
+        val seriesData = res.document.selectFirst("div.serie-menu")
+        val imdbLink = res.document.selectFirst("a[href*=imdb]")?.attr("href") ?: ""
+        val imdbId = Regex("/(tt.*)/").find(imdbLink)?.destructured?.component1()
+
+        if (seriesData == null) {
+            val iFrameUrl = res.document.selectFirst("#info iframe[width]")?.attr("src")
+            return newMovieLoadResponse(title, url, TvType.Movie, iFrameUrl) {
+                this.plot = desc
+                this.posterUrl = poster
+                this.backgroundPosterUrl = bgPoster
+                this.tags = genres
+                addImdbId(imdbId)
+            }
+        }
+        val episodes =
+                seriesData.select("div.tt_series ul > li").map {
+                    val (season, episode) = it.select("a").attr("data-num").split("x")
+                    newEpisode(it.selectFirst("div.mirrors")?.html()) {
+                        this.name = it.selectFirst("a")?.attr("data-title")
+                        this.season = season.toInt()
+                        this.episode = episode.toInt()
+                    }
+                }
+        return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
             this.plot = desc
             this.posterUrl = poster
             this.backgroundPosterUrl = bgPoster
             this.tags = genres
             addImdbId(imdbId)
         }
-    }
-
-    // Episoden auslesen
-    val episodes = seriesData.select("ul > li").map { episodeElement ->
-        val (season, episode) = episodeElement.selectFirst("a")?.attr("data-num")?.split("x") ?: throw ErrorLoadingException("No episode data")
-        val episodeTitle = episodeElement.selectFirst("a")?.attr("data-title") ?: "Episode $season x $episode"
-        val mirrorsHtml = episodeElement.selectFirst("div.mirrors")?.html() ?: ""
-
-        // Hier Links für die Episode extrahieren
-        val episodeLinks = episodeElement.select("a[data-link]").map { linkElement ->
-            val linkType = linkElement.attr("data-m")
-            val linkUrl = linkElement.attr("data-link")
-            Pair(linkType, linkUrl)
-        }
-
-        newEpisode(mirrorsHtml) {
-            this.name = episodeTitle
-            this.season = season.toInt()
-            this.episode = episode.toInt()
-            // Hier kannst du die episodeLinks speichern, wenn nötig
-        }
-    }
-
-    return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes) {
-        this.plot = desc
-        this.posterUrl = poster
-        this.backgroundPosterUrl = bgPoster
-        this.tags = genres
-        addImdbId(imdbId)
-    }
-                                      }
-        // Links für diese Episode sammeln
+}
+  
+    // Links für diese Episode sammeln
   override suspend fun loadLinks(
             data: String,
             isCasting: Boolean,
