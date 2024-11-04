@@ -1,4 +1,5 @@
 package com.hexated
+
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
 import com.lagradost.cloudstream3.LoadResponse
@@ -131,164 +132,80 @@ open class KinoKiste : MainAPI() {
         }
     }
 
-override suspend fun loadLinks(
-        data: String,
-        isCasting: Boolean,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-): Boolean {
-    var linkPairs = listOf<Pair<String, String>>()
-    if (data.contains(mainUrl)) {
-        val mirrorsData = Jsoup.parse(data.removeSuffix("$mainUrl/"))
-        mirrorsData.select("a").forEach {
-            linkPairs += it.attr("data-m") to it.attr("data-link")
+    override suspend fun loadLinks(
+            data: String,
+            isCasting: Boolean,
+            subtitleCallback: (SubtitleFile) -> Unit,
+            callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        var linkPairs = listOf<Pair<String, String>>()
+        if (data.contains(mainUrl)) {
+            var mirrorsData = Jsoup.parse(data.removeSuffix("$mainUrl/"))
+            mirrorsData.select("a").forEach {
+                linkPairs += it.attr("data-m") to it.attr("data-link")
+            }
+        } else {
+            val res = app.get(data).document
+            res.select("li[data-link]").forEach {
+                linkPairs += it.text() to "https:".plus(it.attr("data-link"))
+            }
         }
-    } else {
-        val res = app.get(data).document
-        res.select("li[data-link]").forEach {
-            linkPairs += it.text() to "https:".plus(it.attr("data-link"))
+        linkPairs.amap {
+            when (it.first) {
+                "supervideo" -> {}
+                "dropload" -> Dropload().getUrl(it.second, it.second)?.amap { callback.invoke(it) }
+                "mixdrop" -> loadExtractor(it.second, subtitleCallback, callback)
+                "doodstream" ->
+                        AnyDoodStreamExtractor(getBaseUrl(it.second))
+                                .getUrl(it.second, it.second)
+                                ?.amap { callback.invoke(it) }
+                else -> {}
+            }
         }
+        return true
     }
 
-    linkPairs.amap {
-      when (it.first) {
-    "supervideo" -> SuperVideoExtractor().getUrl(it.second, it.second)?.amap { callback.invoke(it) } // Beispiel ohne Parameter
-    "dropload" -> Dropload().getUrl(it.second, it.second)?.amap { callback.invoke(it) } // Beispiel ohne Parameter
-    "mixdrop" -> MixdropExtractor().getUrl(it.second, it.second)?.amap { callback.invoke(it) } // Beispiel ohne Parameter
-    "doodstream" -> AnyDoodStreamExtractor(getBaseUrl(it.second)).getUrl(it.second, it.second)?.amap { callback.invoke(it) } // Unverändert
-    else -> {}
-      
-        }
+    // util methods
+    fun getBaseUrl(url: String): String {
+        return URI(url).let { "${it.scheme}://${it.host}" }
     }
-    return true
-}
 
-// Helper function for base URL extraction
-fun getBaseUrl(url: String): String {
-    return URI(url).let { "${it.scheme}://${it.host}" }
-}
-// Extractor for Mixdrop
-class MixdropExtractor : ExtractorApi() {
-    override var name = "Mixdrop"
-    override var mainUrl = "https://mixdrop.co"
-    override val requiresReferer = false
+    class Dropload : Vtbe() {
+        override var name = "Dropload"
+        override var mainUrl = "https://dropload.io"
+        override val requiresReferer = true
+    }
 
-    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val response = app.get(url).text
-        // Beispiel: Extrahiere die Video-URL und die Qualität aus der Antwort
-        val videoUrl = Regex("""file":"(https[^"]+)""").find(response)?.groupValues?.get(1)
-            ?: return null
-        val quality = Regex("""label":"(\d{3,4}p)""").find(response)?.groupValues?.get(1) ?: "Unknown"
+    // extractors
+    open class AnyDoodStreamExtractor(domain: String) : ExtractorApi() {
+        override var name = "DoodStream"
+        override var mainUrl = domain
+        override val requiresReferer = false
 
-        return listOf(
-            ExtractorLink(
-                name = this.name,
-                source = this.name,
-                url = videoUrl,
-                referer = mainUrl,
-                quality = getQualityFromName(quality),
-                isM3u8 = videoUrl.endsWith(".m3u8")
+        override fun getExtractorUrl(id: String): String {
+            return "$mainUrl/d/$id"
+        }
+
+        override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
+            val res = app.get(url).text
+            val md5 = mainUrl + (Regex("/pass_md5/[^']*").find(res)?.value ?: return null)
+            val res2 = app.get(md5, referer = url).text
+            val trueUrl = res2 + "zUEJeL3mUN?token=" + md5.substringAfterLast("/")
+            val quality =
+                    Regex("\\d{3,4}p")
+                            .find(res.substringAfter("<title>").substringBefore("</title>"))
+                            ?.groupValues
+                            ?.get(0)
+            return listOf(
+                    ExtractorLink(
+                            this.name,
+                            this.name,
+                            trueUrl,
+                            mainUrl,
+                            getQualityFromName(quality),
+                            false
+                    )
             )
-        )
-    }
-}
-
-// Extractor for Dropload
-class Dropload : ExtractorApi() {
-    override var name = "Dropload"
-    override var mainUrl = "https://dropload.io"
-    override val requiresReferer = true
-
-    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val response = app.get(url, referer = referer).text
-        val videoUrl = Regex("""file":"(https[^"]+)""").find(response)?.groupValues?.get(1)
-            ?: return null
-        val quality = Regex("""label":"(\d{3,4}p)""").find(response)?.groupValues?.get(1) ?: "Unknown"
-
-        return listOf(
-            ExtractorLink(
-                name = this.name,
-                source = this.name,
-                url = videoUrl,
-                referer = mainUrl,
-                quality = getQualityFromName(quality),
-                isM3u8 = videoUrl.endsWith(".m3u8")
-            )
-        )
-    }
-}
-
-// Extractor for AnyDoodStream
-open class AnyDoodStreamExtractor(domain: String) : ExtractorApi() {
-    override var name = "DoodStream"
-    override var mainUrl = domain
-    override val requiresReferer = false
-
-    override fun getExtractorUrl(id: String): String {
-        return "$mainUrl/d/$id"
-    }
-
-    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        val res = app.get(url).text
-        val md5 = mainUrl + (Regex("/pass_md5/[^']*").find(res)?.value ?: return null)
-        val res2 = app.get(md5, referer = url).text
-        val trueUrl = res2 + "zUEJeL3mUN?token=" + md5.substringAfterLast("/")
-        val quality =
-                Regex("\\d{3,4}p")
-                        .find(res.substringAfter("<title>").substringBefore("</title>"))
-                        ?.groupValues
-                        ?.get(0)
-        return listOf(
-                ExtractorLink(
-                        this.name,
-                        this.name,
-                        trueUrl,
-                        mainUrl,
-                        getQualityFromName(quality),
-                        false
-                )
-        )
-    }
-}
-
-open class SuperVideoExtractor : ExtractorApi() {
-    override var name = "SuperVideo"
-    override var mainUrl = "https://supervideo.cc"
-    override val requiresReferer = true
-
-    override fun getExtractorUrl(id: String): String {
-        return "$mainUrl/$id"
-    }
-
-    override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
-        // Versuchen, die Seite abzurufen
-        val response = try {
-            app.get(url, referer = referer).text
-        } catch (e: Exception) {
-            throw ErrorLoadingException("Fehler beim Abrufen der Seite: ${e.message}")
         }
-
-        // Debugging: Protokollieren der Antwort, um sicherzustellen, dass wir den richtigen Inhalt haben
-        println("Antwort von SuperVideo: $response")
-
-        // Regex zum Extrahieren der Video-URL
-        val videoUrl = Regex("""file\s*:\s*"(https[^"]+)"""").find(response)?.groupValues?.get(1)
-            ?: throw ErrorLoadingException("Video-URL nicht gefunden.")
-
-        // Regex zur Extraktion der Qualität (wenn verfügbar)
-        val quality = Regex("""label\s*:\s*"(.*?)"""").find(response)?.groupValues?.get(1) ?: "Unbekannt"
-
-        // Rückgabe der Extraktorlinks
-        return listOf(
-            ExtractorLink(
-                name = this.name,
-                source = this.name,
-                url = videoUrl,
-                referer = mainUrl,
-                quality = getQualityFromName(quality),
-                isM3u8 = videoUrl.endsWith(".m3u8")
-            )
-        )
-      }
-   }
+    }
 }
