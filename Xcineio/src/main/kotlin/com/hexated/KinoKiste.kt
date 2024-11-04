@@ -146,8 +146,7 @@ override suspend fun load(url: String): LoadResponse? {
         var linkPairs = listOf<Pair<String, String>>()
         if (data.contains(mainUrl)) {
             var mirrorsData = Jsoup.parse(data.removeSuffix("$mainUrl/"))
-            mirrorsData.select("a").forEach {
-                linkPairs += it.attr("data-m") to it.attr("data-link")
+            mirrorsData.select("a[data-link]").forEach { linkPairs += it.attr("data-m") to it.attr("data-link")
             }
         } else {
             val res = app.get(data).document
