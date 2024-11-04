@@ -230,7 +230,7 @@ open class AnyDoodStreamExtractor(domain: String) : ExtractorApi() {
 // Extractor for SuperVideo
 class SuperVideoExtractor : ExtractorApi() {
     override var name = "SuperVideo"
-    override var mainUrl = "https://supervideo.cc"
+    override var mainUrl = "https://supervideo.tv"
     override val requiresReferer = false
 
     override suspend fun getUrl(url: String, referer: String?): List<ExtractorLink>? {
