@@ -37,10 +37,6 @@ class FileLions : Filesim() {
     override val name = "Filelions"
     override var mainUrl = "https://filelions.to"
 }
-class StreamTapeAdblockuser : StreamTape() {
-    override var mainUrl = "https://streamtapeadblockuser.xyz"
-}
-
 class StreamTapeTo : StreamTape() {
     override var mainUrl = "https://streamtape.to"
 }
