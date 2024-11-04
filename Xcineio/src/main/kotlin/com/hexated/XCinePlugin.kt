@@ -19,7 +19,6 @@ class FilmCloud : Plugin() {
         registerMainAPI(FilmpalastProvider())
 
         // Alle Extractor-APIs werden hier registriert
-        registerExtractorAPI(Doodstream())
         registerExtractorAPI(StreamHubGg())
         registerExtractorAPI(VoeSx())
         registerExtractorAPI(MetaGnathTuggers())
