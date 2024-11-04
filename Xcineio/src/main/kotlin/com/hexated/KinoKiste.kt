@@ -47,7 +47,6 @@ open class KinoKiste : MainAPI() {
             mainPageOf(
                     "$mainUrl/filme/" to "Filme",
                     "$mainUrl/kinofilme/" to "Filme im Kino",
-                    "$mainUrl/serien/" to "Serien",
                     "$mainUrl/drama/" to "Drama Filme",
                     "$mainUrl/familie/" to "Familien Filme",
                     "$mainUrl/fantasy/" to "Fantasy Filme",
