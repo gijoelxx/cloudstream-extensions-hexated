@@ -151,12 +151,13 @@ override suspend fun loadLinks(
     }
 
     linkPairs.amap {
-        when (it.first) {
-            "supervideo" -> SuperVideoExtractor(getBaseUrl(it.second)).getUrl(it.second, it.second)?.amap { callback.invoke(it) }
-            "dropload" -> Dropload(getBaseUrl(it.second)).getUrl(it.second, it.second)?.amap { callback.invoke(it) }
-            "mixdrop" -> MixdropExtractor(getBaseUrl(it.second)).getUrl(it.second, it.second)?.amap { callback.invoke(it) }
-            "doodstream" -> AnyDoodStreamExtractor(getBaseUrl(it.second)).getUrl(it.second, it.second)?.amap { callback.invoke(it) }
-            else -> {}
+      when (it.first) {
+    "supervideo" -> SuperVideoExtractor().getUrl(it.second, it.second)?.amap { callback.invoke(it) } // Beispiel ohne Parameter
+    "dropload" -> Dropload().getUrl(it.second, it.second)?.amap { callback.invoke(it) } // Beispiel ohne Parameter
+    "mixdrop" -> MixdropExtractor().getUrl(it.second, it.second)?.amap { callback.invoke(it) } // Beispiel ohne Parameter
+    "doodstream" -> AnyDoodStreamExtractor(getBaseUrl(it.second)).getUrl(it.second, it.second)?.amap { callback.invoke(it) } // Unverändert
+    else -> {}
+      
         }
     }
     return true
