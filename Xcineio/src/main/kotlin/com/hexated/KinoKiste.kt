@@ -96,7 +96,7 @@ override suspend fun load(url: String): LoadResponse? {
         ?: throw ErrorLoadingException("Unable to read title")
     val desc = res.document.selectFirst("meta[itemprop='description']")?.attr("content")
     val poster = mainUrl.plus(res.document.selectFirst("img#poster_path_large")?.attr("src") ?: "")
-    val bgStyle = res.document.selectFirst("#dle-content > style[media=screen]")?.html() ?: ""
+    val bgStyle = res.document.selectFirst("#dle-content > style[media=screen]")?.html() ?: "")
     val bgPoster = mainUrl.plus(Regex("url\\"(.*?)\"\").find(bgStyle)?.destructured?.component1() ?: "")
     
     // Genres
