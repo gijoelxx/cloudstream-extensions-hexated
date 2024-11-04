@@ -19,6 +19,29 @@ class Highstream : MoflixClick() {
     override val name = "Highstream"
     override val mainUrl = "https://highstream.tv"
 }
+class StreamTapeTo : StreamTape() {
+    override var mainUrl = "https://streamtape.com"
+}
+
+class StreamHubGg : Streamhub() {
+    override var name = "Streamhub Gg"
+    override var mainUrl = "https://streamhub.gg"
+}
+
+class VoeSx: Voe() {
+    override val name = "Voe Sx"
+    override val mainUrl = "https://voe.sx"
+}
+
+class MetaGnathTuggers : Voe() {
+    override val name = "Metagnathtuggers"
+    override val mainUrl = "https://metagnathtuggers.com"
+}
+
+class FileLions : Filesim() {
+    override val name = "Filelions"
+    override var mainUrl = "https://filelions.to"
+}
 
 open class MoflixClick : ExtractorApi() {
     override val name = "MoflixClick"
