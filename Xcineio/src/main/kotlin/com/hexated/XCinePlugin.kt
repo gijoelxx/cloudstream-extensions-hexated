@@ -1,12 +1,14 @@
-
 package com.hexated
+
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
+
 @CloudstreamPlugin
-class FilmCloud: Plugin() {
+class FilmCloud : Plugin() {
     override fun load(context: Context) {
-        // All providers should be added in this manner. Please don't edit the providers list directly.
+        // Alle Provider sollten auf diese Weise hinzugefügt werden.
+        // Bitte bearbeite die Provider-Liste nicht direkt.
         registerMainAPI(Aniworld())
         registerMainAPI(Xcinetop())
         registerMainAPI(Movie4k())
@@ -16,6 +18,8 @@ class FilmCloud: Plugin() {
         registerMainAPI(Kinoger())
         registerMainAPI(FilmpalastProvider())
         registerMainAPI(Moflix())
+
+        // Alle Extractor-APIs werden hier registriert
         registerExtractorAPI(MoflixClick())
         registerExtractorAPI(Highstream())
         registerExtractorAPI(MoflixFans())
