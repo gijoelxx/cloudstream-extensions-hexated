@@ -6,7 +6,7 @@ import android.content.Context
 @CloudstreamPlugin
 class Movie2kPlugin : Plugin() {
     override fun load(context: Context) {
-      registerMainAPI(Movie2k))
+      registerMainAPI(Movie2k())
       registerExtractorAPI(Dooood())
         registerExtractorAPI(StreamHubGg())
         registerExtractorAPI(VoeSx())
