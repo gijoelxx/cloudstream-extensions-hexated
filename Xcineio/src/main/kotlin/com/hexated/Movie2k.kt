@@ -88,15 +88,15 @@ override suspend fun search(query: String): List<SearchResponse> {
     // Elemente der Suchergebnisse finden (Passe den CSS-Selektor an das genaue HTML-Layout an)
     val searchResults: Elements = doc.select("div.movie-item")  // Beispiel-Selektor, anpassen
 
-    // Ergebnismenge zu SearchResponse mappen
+    // Ergebnismenge zu MovieSearchResponse mappen
     return searchResults.mapNotNull { element ->
         try {
             val title = element.select("div.movie-title").text() // Titel des Films extrahieren
             val url = element.select("a").attr("href") // URL des Films extrahieren
             val posterUrl = element.select("img").attr("src") // Bildquelle extrahieren
             
-            // Rückgabe eines neuen SearchResponse-Objekts
-            SearchResponse(
+            // Rückgabe eines neuen MovieSearchResponse-Objekts
+            MovieSearchResponse(
                 title = title,
                 url = "$mainUrl$url",
                 posterUrl = posterUrl
