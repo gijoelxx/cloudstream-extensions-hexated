@@ -8,6 +8,10 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
+import org.jsoup.select.Elements
+
 
 open class Movie2k : MainAPI() {
     override var name = "Movie2k"
@@ -73,14 +77,35 @@ open class Movie2k : MainAPI() {
         }
     }
 
-    override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
-    override suspend fun search(query: String): List<SearchResponse> {
-        val res = app.get("$mainAPI/data/search/?lang=2&keyword=$query", referer = "$mainUrl/").text
-        return tryParseJson<ArrayList<Media>>(res)?.mapNotNull {
-            it.toSearchResponse()
-        } ?: throw ErrorLoadingException()
+override suspend fun search(query: String): List<SearchResponse> {
+    // Anfrage an die HTML-Seite der Suche senden
+    val res = app.get("$mainUrl/browse?c=movie&m=filter&keyword=$query").text
+    
+    // HTML-Dokument parsen
+    val doc: Document = Jsoup.parse(res)
+    
+    // Elemente der Suchergebnisse finden (Passe den CSS-Selektor an das genaue HTML-Layout an)
+    val searchResults: Elements = doc.select("div.movie-item")  // Beispiel-Selektor, anpassen
+
+    // Ergebnismenge zu SearchResponse mappen
+    return searchResults.mapNotNull { element ->
+        try {
+            val title = element.select("div.movie-title").text() // Titel des Films extrahieren
+            val url = element.select("a").attr("href") // URL des Films extrahieren
+            val posterUrl = element.select("img").attr("src") // Bildquelle extrahieren
+            
+            // Rückgabe eines neuen SearchResponse-Objekts
+            SearchResponse(
+                title = title,
+                url = "$mainUrl$url",
+                posterUrl = posterUrl
+            )
+        } catch (e: Exception) {
+            null // Fehlerhafte Elemente überspringen
+        }
     }
+}
 
     override suspend fun load(url: String): LoadResponse? {
         val id = parseJson<Link>(url).id
