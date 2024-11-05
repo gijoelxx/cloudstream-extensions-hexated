@@ -8,6 +8,9 @@ import com.lagradost.cloudstream3.utils.AppUtils.tryParseJson
 import com.lagradost.cloudstream3.utils.ExtractorLink
 import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
+import com.lagradost.cloudstream3.SearchResponse
+import com.lagradost.cloudstream3.ErrorLoadingException
+import com.lagradost.cloudstream3.app
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
@@ -78,54 +81,51 @@ open class Movie2k : MainAPI() {
     }
 
 
-// Datenklasse für die Suchergebnisse
 data class MovieSearchResponse(
-    val name: String,       // Titel des Films
-    val apiName: String,    // API-Name, z.B. "Movie2K"
-    val url: String,        // URL des Films
-    val posterUrl: String    // URL des Film-Posters
-) : SearchResponse
+    override var id: Int? = null,           // ID, falls benötigt; sonst null
+    override var name: String,               // Titel des Films
+    override var apiName: String? = "Movie2K",  // API-Name, falls benötigt
+    override var url: String,                // URL zur Detailseite
+    override var posterUrl: String? = null   // Poster-Bild-URL, falls vorhanden
+) : SearchResponse()                         // Vererbung von SearchResponse
 
-// Implementierung der Suchmethode
-override suspend fun search(query: String): List<SearchResponse> {
-    // Hole die HTML-Seite der Suchergebnisse
-    val res = app.get("https://www2.movie2k.ch/browse?c=movie&m=filter&keyword=$query", referer = "https://www2.movie2k.ch").text
-    
-    // Parse das HTML mit Jsoup
-    val document: Document = Jsoup.parse(res)
-    
-    // Selektiere die Elemente für die Suchergebnisse
-    val results: Elements = document.select(".lister-item")  // Hauptcontainer für jedes Suchergebnis
-    
-    // Mapping der Suchergebnisse in `SearchResponse`-Objekte
-    return results.mapNotNull { element ->
-        try {
-            val titleElement = element.selectFirst(".lister-item-header a")
-            val title = titleElement?.text() ?: return@mapNotNull null
-            val url = titleElement?.attr("href")?.let { "https://www2.movie2k.ch$it" } ?: return@mapNotNull null
-            
-            val posterElement = element.selectFirst(".lister-item-image img")
-            val posterUrl = posterElement?.attr("src") ?: ""
-            
-            val descriptionElement = element.selectFirst(".ratings-bar + .text-muted")
-            val description = descriptionElement?.text() ?: ""
-            
-            val episodesElement = element.selectFirst(".lister-item-content .text-muted .ghost + a")
-            val episodes = episodesElement?.text() ?: ""
+class Movie2kPlugin {
 
-            // Erstelle das Suchergebnis-Objekt
-            SearchResponse(
-                title = title,
-                url = url,
-                posterUrl = posterUrl,
-                description = description,
-                episodes = episodes
-            )
-        } catch (e: Exception) {
-            null // Falls es einen Fehler gibt, wird das Element übersprungen
+    // Suchfunktion für Movie2K
+    suspend fun search(query: String): List<SearchResponse> {
+        val res = app.get("$mainUrl/browse?c=movie&m=filter&keyword=$query", referer = mainUrl).text
+        val document = Jsoup.parse(res)
+        val results = document.select(".lister-item")
+
+        return results.mapNotNull { element ->
+            try {
+                val titleElement = element.selectFirst(".lister-item-header a")
+                val title = titleElement?.text() ?: return@mapNotNull null
+                val url = titleElement?.attr("href")?.let { "$mainUrl$it" } ?: return@mapNotNull null
+
+                val posterElement = element.selectFirst(".lister-item-image img")
+                val posterUrl = posterElement?.attr("src")
+
+                val descriptionElement = element.selectFirst(".ratings-bar + .text-muted")
+                val description = descriptionElement?.text() ?: ""
+
+                val episodesElement = element.selectFirst(".lister-item-content .text-muted .ghost + a")
+                val episodes = episodesElement?.text() ?: ""
+
+                // Erstelle das MovieSearchResponse-Objekt
+                MovieSearchResponse(
+                    name = title,
+                    url = url,
+                    posterUrl = posterUrl ?: "",
+                    apiName = "Movie2K"
+                )
+            } catch (e: Exception) {
+                null
+            }
         }
     }
 }
+
 
     override suspend fun load(url: String): LoadResponse? {
         val id = parseJson<Link>(url).id
