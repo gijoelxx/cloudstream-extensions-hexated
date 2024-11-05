@@ -17,7 +17,7 @@ open class Movie2k: MainAPI() {
     override val usesWebView = false
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.TvSeries, TvType.Movie)
-    open var mainAPI = "https://api.movie2k ch"
+    open var mainAPI = "https://api.movie2k.ch"
 
     override val mainPage = mainPageOf(
         "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=movies&order_by=trending" to "Trending",
