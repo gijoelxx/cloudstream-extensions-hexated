@@ -88,35 +88,44 @@ data class MovieSearchResponse(
 
 // Implementierung der Suchmethode
 override suspend fun search(query: String): List<SearchResponse> {
-    // Anfrage an die HTML-Seite der Suche senden
-    val res = app.get("$mainUrl/browse?c=movie&m=filter&keyword=$query").text
+    // Hole die HTML-Seite der Suchergebnisse
+    val res = app.get("https://www2.movie2k.ch/browse?c=movie&m=filter&keyword=$query", referer = "https://www2.movie2k.ch").text
     
-    // HTML-Dokument parsen
-    val doc: Document = Jsoup.parse(res)
+    // Parse das HTML mit Jsoup
+    val document: Document = Jsoup.parse(res)
     
-    // Elemente der Suchergebnisse finden (Passe den CSS-Selektor an das genaue HTML-Layout an)
-    val searchResults: Elements = doc.select("div.movie-item")  // Beispiel-Selektor, anpassen
-
-    // Ergebnismenge zu MovieSearchResponse mappen
-    return searchResults.mapNotNull { element ->
+    // Selektiere die Elemente für die Suchergebnisse
+    val results: Elements = document.select(".lister-item")  // Hauptcontainer für jedes Suchergebnis
+    
+    // Mapping der Suchergebnisse in `SearchResponse`-Objekte
+    return results.mapNotNull { element ->
         try {
-            val name = element.select("div.movie-title").text() // Titel des Films extrahieren
-            val url = element.select("a").attr("href") // URL des Films extrahieren
-            val posterUrl = element.select("img").attr("src") // Bildquelle extrahieren
+            val titleElement = element.selectFirst(".lister-item-header a")
+            val title = titleElement?.text() ?: return@mapNotNull null
+            val url = titleElement?.attr("href")?.let { "https://www2.movie2k.ch$it" } ?: return@mapNotNull null
             
-            // Erstelle und returniere ein neues MovieSearchResponse-Objekt mit den korrekten Parametern
-            MovieSearchResponse(
-                name = name,          // Name des Films
-                apiName = "Movie2K",   // API-Name (z.B. "Movie2K" oder eine andere passende Bezeichnung)
-                url = "$mainUrl$url", // Die vollständige URL
-                posterUrl = posterUrl  // Die Bild-URL
+            val posterElement = element.selectFirst(".lister-item-image img")
+            val posterUrl = posterElement?.attr("src") ?: ""
+            
+            val descriptionElement = element.selectFirst(".ratings-bar + .text-muted")
+            val description = descriptionElement?.text() ?: ""
+            
+            val episodesElement = element.selectFirst(".lister-item-content .text-muted .ghost + a")
+            val episodes = episodesElement?.text() ?: ""
+
+            // Erstelle das Suchergebnis-Objekt
+            SearchResponse(
+                title = title,
+                url = url,
+                posterUrl = posterUrl,
+                description = description,
+                episodes = episodes
             )
         } catch (e: Exception) {
-            null // Fehlerhafte Elemente überspringen
+            null // Falls es einen Fehler gibt, wird das Element übersprungen
         }
     }
 }
-
 
     override suspend fun load(url: String): LoadResponse? {
         val id = parseJson<Link>(url).id
