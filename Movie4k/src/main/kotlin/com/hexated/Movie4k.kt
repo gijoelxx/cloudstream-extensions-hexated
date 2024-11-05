@@ -80,10 +80,17 @@ override suspend fun getMainPage(
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val res = app.get("$mainAPI/data/search/?lang=2&keyword=$query", referer = "$mainUrl/").text
-        return tryParseJson<ArrayList<Media>>(res)?.mapNotNull {
-            it.toSearchResponse()
-        } ?: throw ErrorLoadingException()
+    val headers = mapOf(
+        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36",
+        "Accept" to "application/json, text/javascript, */*; q=0.01",
+        "X-Requested-With" to "XMLHttpRequest",
+        "Referer" to "$mainUrl/"
+    )
+    
+    val res = app.get("$mainAPI/data/search/?lang=2&keyword=$query", headers = headers).text
+    return tryParseJson<ArrayList<Media>>(res)?.mapNotNull {
+        it.toSearchResponse()
+    } ?: throw ErrorLoadingException()
     }
 
     override suspend fun load(url: String): LoadResponse? {
