@@ -7,7 +7,6 @@ import android.content.Context
 class Movie2kPlugin : Plugin() {
     override fun load(context: Context) {
       registerMainAPI(Movie2k())
-      registerExtractorAPI(Dooood())
         registerExtractorAPI(StreamHubGg())
         registerExtractorAPI(VoeSx())
         registerExtractorAPI(MetaGnathTuggers())
@@ -17,8 +16,7 @@ class Movie2kPlugin : Plugin() {
         registerExtractorAPI(DoodReExtractor())
         registerExtractorAPI(Streamzz())
         registerExtractorAPI(Streamcrypt())
-    }
-}
+    
 
 
      }
