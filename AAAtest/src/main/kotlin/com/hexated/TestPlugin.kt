@@ -9,8 +9,7 @@ import android.content.Context
 class TestPlugin: Plugin() {
     override fun load(context: Context) {
         // All providers should be added in this manner. Please don't edit the providers list directly.
-        registerMainAPI(Moflix())
-        registerMainAPI(Cineclix())
+        registerMainAPI(Test())
         registerExtractorAPI(MoflixClick())
         registerExtractorAPI(Highstream())
         registerExtractorAPI(MoflixFans())
