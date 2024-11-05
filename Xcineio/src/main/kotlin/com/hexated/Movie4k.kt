@@ -11,7 +11,7 @@ import com.lagradost.cloudstream3.utils.loadExtractor
 
 open class Movie4k : MainAPI() {
     override var name = "Movie4k"
-    override var mainUrl = "https://movie4k.sx"
+    override var mainUrl = "https://movie4k.stream"
     override var lang = "de"
     override val hasQuickSearch = true
     override val usesWebView = false
