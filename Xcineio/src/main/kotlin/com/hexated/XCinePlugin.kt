@@ -18,6 +18,7 @@ class FilmCloud : Plugin() {
         registerMainAPI(Kinoger())
         registerMainAPI(FilmpalastProvider())
         registerMainAPI(Serienstream())
+        registerMainAPI(Kinox())
 
         // Alle Extractor-APIs werden hier registriert
         registerExtractorAPI(Dooood())
