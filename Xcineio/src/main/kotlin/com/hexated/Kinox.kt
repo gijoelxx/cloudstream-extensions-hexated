@@ -194,3 +194,103 @@ open class Kinox : MainAPI() {
             }
         }
     }
+    private fun String.compress(): String {
+        return this.replace("/original/", "/w500/")
+    }
+
+    data class LoadData(
+        val id: Int? = null,
+        val season: Int? = null,
+        val episode: Int? = null,
+        val isSeries: Boolean? = null,
+        val urls: List<Videos>? = listOf(),
+    )
+
+    data class Responses(
+        @JsonProperty("pagination") val pagination: Pagination? = null,
+        @JsonProperty("title") val title: Title? = null,
+        @JsonProperty("seo") val seo: String? = null,
+        @JsonProperty("credits") val credits: Credits? = null,
+        @JsonProperty("seasons") val seasons: Seasons? = null,
+        @JsonProperty("episodes") val episodes: Episodes? = null,
+        @JsonProperty("titles") val titles: ArrayList<Data>? = arrayListOf(),
+        @JsonProperty("results") val results: ArrayList<Data>? = arrayListOf(),
+    )
+
+    data class Seasons(
+        @JsonProperty("data") val data: ArrayList<Data>? = arrayListOf(),
+    ) {
+        data class Data(
+            @JsonProperty("id") val id: Int? = null,
+            @JsonProperty("number") val number: Int? = null,
+            @JsonProperty("poster") val poster: String? = null,
+            @JsonProperty("release_date") val releaseDate: String? = null,
+        )
+    }
+data class Episodes(
+        @JsonProperty("episode") val episode: EpisodeData? = null,
+    ) {
+        data class EpisodeData(
+            @JsonProperty("id") val id: Int? = null,
+            @JsonProperty("name") val name: String? = null,
+            @JsonProperty("season") val season: Int? = null,
+            @JsonProperty("episode_number") val episodeNumber: Int? = null,
+            @JsonProperty("poster") val poster: String? = null,
+            @JsonProperty("rating") val rating: Double? = null,
+            @JsonProperty("description") val description: String? = null,
+            @JsonProperty("videos") val videos: List<Videos>? = null,
+            @JsonProperty("release_date") val releaseDate: String? = null,
+        )
+    }
+
+    data class Videos(
+        @JsonProperty("src") val src: String? = null,
+        @JsonProperty("quality") val quality: String? = null,
+        @JsonProperty("category") val category: String? = null,
+    )
+
+    data class Title(
+        @JsonProperty("id") val id: Int? = null,
+        @JsonProperty("name") val name: String? = null,
+        @JsonProperty("description") val description: String? = null,
+        @JsonProperty("year") val year: Int? = null,
+        @JsonProperty("isSeries") val isSeries: Boolean? = null,
+        @JsonProperty("poster") val poster: String? = null,
+        @JsonProperty("backdrop") val backdrop: String? = null,
+        @JsonProperty("rating") val rating: Double? = null,
+        @JsonProperty("keywords") val keywords: List<Keyword>? = null,
+        @JsonProperty("videos") val videos: List<Videos>? = null,
+        @JsonProperty("imdbId") val imdbId: String? = null,
+        @JsonProperty("tmdbId") val tmdbId: String? = null,
+        @JsonProperty("status") val status: String? = null,
+    )
+
+    data class Keyword(
+        @JsonProperty("display_name") val displayName: String? = null,
+    )
+
+    data class Credits(
+        @JsonProperty("actors") val actors: List<Actor>? = null,
+    ) {
+        data class Actor(
+            @JsonProperty("name") val name: String? = null,
+            @JsonProperty("poster") val poster: String? = null,
+            @JsonProperty("pivot") val pivot: Pivot? = null,
+        ) {
+            data class Pivot(
+                @JsonProperty("character") val character: String? = null,
+            )
+        }
+    }
+
+    data class Pagination(
+        @JsonProperty("total") val total: Int? = null,
+        @JsonProperty("count") val count: Int? = null,
+        @JsonProperty("current_page") val currentPage: Int? = null,
+        @JsonProperty("last_page") val lastPage: Int? = null,
+        @JsonProperty("per_page") val perPage: Int? = null,
+    )
+
+    // Weitere erforderliche Datenklassen oder Funktionen können hier hinzugefügt werden
+}
+    
