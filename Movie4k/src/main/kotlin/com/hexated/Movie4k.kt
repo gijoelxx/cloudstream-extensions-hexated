@@ -44,17 +44,25 @@ open class Movie4k : MainAPI() {
         return "https://cdn.movie4k.stream/data${link.substringAfter("/data")}"
     }
 
-    override suspend fun getMainPage(
-        page: Int,
-        request: MainPageRequest
-    ): HomePageResponse {
-        val home =
-            app.get("$mainAPI/${request.data}&page=$page", referer = "$mainUrl/")
-                .parsedSafe<MediaResponse>()?.movies?.mapNotNull { res ->
-                    res.toSearchResponse()
-                } ?: throw ErrorLoadingException()
-        return newHomePageResponse(request.name, home)
-    }
+override suspend fun getMainPage(
+    page: Int,
+    request: MainPageRequest
+): HomePageResponse {
+    val headers = mapOf(
+        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36",
+        "Accept" to "application/json, text/javascript, */*; q=0.01",
+        "X-Requested-With" to "XMLHttpRequest",
+        "Referer" to "$mainUrl/"
+    )
+    
+    val home = app.get("$mainAPI/${request.data}&page=$page", headers = headers)
+        .parsedSafe<MediaResponse>()?.movies?.mapNotNull { res ->
+            res.toSearchResponse()
+        } ?: throw ErrorLoadingException()
+    
+    return newHomePageResponse(request.name, home)
+}
+
 
     private fun Media.toSearchResponse(): SearchResponse? {
         return newAnimeSearchResponse(
