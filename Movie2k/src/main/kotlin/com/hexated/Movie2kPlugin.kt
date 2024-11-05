@@ -4,7 +4,7 @@ import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
 
 @CloudstreamPlugin
-class Movie2k : Plugin() {
+class Movie2kPlugin : Plugin() {
     override fun load(context: Context) {
       registerMainAPI(Movie2k))
 
