@@ -76,7 +76,7 @@ open class Movie4k : MainAPI() {
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val res = app.get("$mainAPI/data/search/?lang=2&keyword=$query", referer = "$mainUrl/").text
+        val res = app.get("$mainAPI/data/browse/?lang=2&keyword=$query", referer = "$mainUrl/").text
         return tryParseJson<ArrayList<Media>>(res)?.mapNotNull {
             it.toSearchResponse()
         } ?: throw ErrorLoadingException()
