@@ -78,6 +78,15 @@ open class Movie2k : MainAPI() {
     }
 
 
+// Datenklasse für die Suchergebnisse
+data class MovieSearchResponse(
+    val name: String,       // Titel des Films
+    val apiName: String,    // API-Name, z.B. "Movie2K"
+    val url: String,        // URL des Films
+    val posterUrl: String    // URL des Film-Posters
+) : SearchResponse
+
+// Implementierung der Suchmethode
 override suspend fun search(query: String): List<SearchResponse> {
     // Anfrage an die HTML-Seite der Suche senden
     val res = app.get("$mainUrl/browse?c=movie&m=filter&keyword=$query").text
@@ -91,21 +100,23 @@ override suspend fun search(query: String): List<SearchResponse> {
     // Ergebnismenge zu MovieSearchResponse mappen
     return searchResults.mapNotNull { element ->
         try {
-            val title = element.select("div.movie-title").text() // Titel des Films extrahieren
+            val name = element.select("div.movie-title").text() // Titel des Films extrahieren
             val url = element.select("a").attr("href") // URL des Films extrahieren
             val posterUrl = element.select("img").attr("src") // Bildquelle extrahieren
             
-            // Rückgabe eines neuen MovieSearchResponse-Objekts
+            // Erstelle und returniere ein neues MovieSearchResponse-Objekt mit den korrekten Parametern
             MovieSearchResponse(
-                title = title,
-                url = "$mainUrl$url",
-                posterUrl = posterUrl
+                name = name,          // Name des Films
+                apiName = "Movie2K",   // API-Name (z.B. "Movie2K" oder eine andere passende Bezeichnung)
+                url = "$mainUrl$url", // Die vollständige URL
+                posterUrl = posterUrl  // Die Bild-URL
             )
         } catch (e: Exception) {
             null // Fehlerhafte Elemente überspringen
         }
     }
 }
+
 
     override suspend fun load(url: String): LoadResponse? {
         val id = parseJson<Link>(url).id
