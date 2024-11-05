@@ -6,7 +6,7 @@ import android.content.Context
 @CloudstreamPlugin
 class Movie4kPlugin : Plugin() {
     override fun load(context: Context) {
-      registerMainAPI(Movie4())
+      registerMainAPI(Movie4k())
         registerExtractorAPI(StreamHubGg())
         registerExtractorAPI(VoeSx())
         registerExtractorAPI(MetaGnathTuggers())
