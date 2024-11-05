@@ -1,5 +1,4 @@
 package com.hexated
-
 import com.lagradost.cloudstream3.plugins.CloudstreamPlugin
 import com.lagradost.cloudstream3.plugins.Plugin
 import android.content.Context
@@ -14,11 +13,10 @@ class FilmCloud : Plugin() {
         registerMainAPI(Movie4k())
         registerMainAPI(Movie2k())
         registerMainAPI(KinoKiste())
-        registerMainAPI(FreeTVProvider())
         registerMainAPI(Kinoger())
         registerMainAPI(FilmpalastProvider())
         registerMainAPI(Serienstream())
-        registerMainAPI(Kinox))
+        
         
 
         // Alle Extractor-APIs werden hier registriert
