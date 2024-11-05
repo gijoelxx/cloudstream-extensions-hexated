@@ -11,7 +11,7 @@ import com.lagradost.cloudstream3.utils.AppUtils.toJson
 import org.jsoup.Jsoup
 import kotlin.math.roundToInt
 
-open class Moflix : MainAPI() {
+open class Test : MainAPI() {
     override var name = "Moflix"
     override var mainUrl = "https://moflix-stream.xyz"
     override var lang = "de"
