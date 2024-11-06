@@ -11,7 +11,6 @@ class FilmCloud : Plugin() {
         registerMainAPI(Aniworld())
         registerMainAPI(Xcinetop())
         registerMainAPI(Movie4k())
-        registerMainAPI(Movie2k())
         registerMainAPI(KinoKiste())
         registerMainAPI(Kinoger())
         registerMainAPI(FilmpalastProvider())
