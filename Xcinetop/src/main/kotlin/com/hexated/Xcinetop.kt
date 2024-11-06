@@ -60,7 +60,7 @@ class Xcinetop : MainAPI() {
                 "search_start" to "0",
                 "full_search" to "0",
                 "result_from" to "1",
-                "story" to query
+                "story" to "query"
             )
         ).document
         return document.select("div#dle-content div.movie-item").mapNotNull {
