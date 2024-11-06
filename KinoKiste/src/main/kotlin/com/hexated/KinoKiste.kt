@@ -212,7 +212,7 @@ class KinoKiste : MainAPI() {
             )
         }
     }
-    open class Supervideo : ExtractorApi() {
+    open class Supervideo(domain: String) : ExtractorApi() {
     override var name = "Supervideo"
     override var mainUrl = "https://supervideo.cc"
     override val requiresReferer = false
