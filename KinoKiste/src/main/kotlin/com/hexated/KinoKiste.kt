@@ -1,5 +1,6 @@
 
 package com.hexated
+package com.lagradost.cloudstream3.extractors
 
 import com.lagradost.cloudstream3.ErrorLoadingException
 import com.lagradost.cloudstream3.HomePageResponse
