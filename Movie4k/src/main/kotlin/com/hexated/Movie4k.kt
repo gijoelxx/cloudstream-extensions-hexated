@@ -93,78 +93,57 @@ override suspend fun getMainPage(
     } ?: throw ErrorLoadingException()
     }
 override suspend fun load(url: String): LoadResponse? {
-    val id = parseJson<Link>(url).id
+        val id = parseJson<Link>(url).id
 
-    // Lade Media-Details über die API
-    val res = app.get("$mainAPI/data/watch/?_id=$id", referer = "$mainUrl/")
-        .parsedSafe<MediaDetail>() ?: throw ErrorLoadingException()
-    val type = if (res.tv == 1) "tv" else "movie"
+        val res = app.get("$mainAPI/data/watch/?_id=$id", referer = "$mainUrl/")
+            .parsedSafe<MediaDetail>() ?: throw ErrorLoadingException()
+        val type = if (res.tv == 1) "tv" else "movie"
 
-    // Lade Empfehlungen (optional)
-    val recommendations = app.get("$mainAPI/data/related_movies/?lang=2&cat=$type&_id=$id&server=0").text.let {
-        tryParseJson<List<Media>>(it)
-    }?.mapNotNull { it.toSearchResponse() }
-
-    return if (type == "tv") {
-        // Erstelle und gruppiere die Episoden basierend auf der Staffelnummer
-        val episodes = res.streams?.groupBy { it.e.toString().toIntOrNull() }?.flatMap { (seasonNum, streams) ->
-            streams.mapNotNull { stream ->
-                val episodeNum = stream.e.toString().toIntOrNull()
-                Episode(
-                    data = stream.stream,
-                    season = seasonNum ?: 1,  // Fallback zu Staffel 1, falls keine Staffel angegeben ist
-                    episode = episodeNum,
-                    name = stream.e_title ?: "Episode $episodeNum"
-                )
+        val recommendations =
+            app.get("$mainAPI/data/related_movies/?lang=2&cat=$type&_id=$id&server=0").text.let {
+                tryParseJson<List<Media>>(it)
+            }?.mapNotNull {
+                it.toSearchResponse()
             }
-        } ?: emptyList()
 
-        // Erstelle das TV-Serien-Load-Response-Objekt
-        newTvSeriesLoadResponse(
-            name = res.title ?: res.original_title ?: return null,
-            url = url,
-            type = TvType.TvSeries,
-            episodes = episodes
-        ) {
-            this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
-            this.year = res.year
-            this.plot = res.storyline ?: res.overview
-            this.tags = listOf(res.genres ?: "")
-            this.recommendations = recommendations
+        return if (type == "tv") {
+            val episodes = res.streams?.groupBy { it.e.toString().toIntOrNull() }?.mapNotNull { eps ->
+                val epsNum = eps.key
+                val epsLink = eps.value.map { it.stream }.toJson()
+                Episode(epsLink, episode = epsNum)
+            } ?: emptyList()
+            newTvSeriesLoadResponse(
+                res.title ?: res.original_title ?: return null,
+                url,
+                TvType.TvSeries,
+                episodes
+            ) {
+                this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
+                this.year = res.year
+                this.plot = res.storyline ?: res.overview
+                this.tags = listOf(res.genres ?: "")
+                this.recommendations = recommendations
+            }
+        } else {
+            newMovieLoadResponse(
+                res.original_title ?: res.title ?: return null,
+                url,
+                TvType.Movie,
+                res.streams?.map { Link(it.stream) }?.toJson()
+            ) {
+                this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
+                this.year = res.year
+                this.plot = res.storyline ?: res.overview
+                this.tags = listOf(res.genres ?: "")
+                this.recommendations = recommendations
+            }
         }
-    } else {
-        // Erstelle das Film-Load-Response-Objekt
-        newMovieLoadResponse(
-            name = res.original_title ?: res.title ?: return null,
-            dataUrl = url,
-            type = TvType.Movie,
-            data = res.streams?.map { it.stream }.toJson()
-        ) {
-            this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
-            this.year = res.year
-            this.plot = res.storyline ?: res.overview
-            this.tags = listOf(res.genres ?: "")
-            this.recommendations = recommendations
-        }
+
     }
-}
-    
 
-        // Erstelle das TV-Serien-Load-Response-Objekt
-        newTvSeriesLoadResponse(
-            title = res.title ?: res.original_title ?: return null,
-            url = url,
-            type = TvType.TvSeries,
-            episodes = seasons.flatMap { it.episodes }
-        ) {
-            this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
-            this.year = res.year
-            this.plot = res.storyline ?: res.overview
-            this.tags = listOf(res.genres ?: "")
-            this.recommendations = recommendations
-        }
-    } else {
-          isCasting: Boolean,
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
