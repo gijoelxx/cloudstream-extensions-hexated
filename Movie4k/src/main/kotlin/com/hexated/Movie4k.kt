@@ -76,7 +76,6 @@ override suspend fun getMainPage(
         }
     }
 
-    
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -93,7 +92,7 @@ override suspend fun getMainPage(
     } ?: throw ErrorLoadingException()
     }
 
-override suspend fun load(url: String): LoadResponse? {
+    override suspend fun load(url: String): LoadResponse? {
         val id = parseJson<Link>(url).id
 
         val res = app.get("$mainAPI/data/watch/?_id=$id", referer = "$mainUrl/")
@@ -140,7 +139,8 @@ override suspend fun load(url: String): LoadResponse? {
             }
         }
 
-}
+    }
+
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
