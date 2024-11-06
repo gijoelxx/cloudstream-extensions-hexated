@@ -53,19 +53,16 @@ class Xcinetop : MainAPI() {
     }
 
     override suspend fun search(query: String): List<SearchResponse> {
-        val document = app.post(
-            "$mainUrl/index.php?do=search", data = mapOf(
-                "do" to "search",
-                "subaction" to "search",
-                "search_start" to "0",
-                "full_search" to "0",
-                "result_from" to "1",
-                "story" to "query"
-            )
-        ).document
-        return document.select("div#dle-content div.movie-item").mapNotNull {
-            it.toSearchResult()
-        }
+    // Erstelle die URL mit der query als GET-Parameter
+    val url = "$mainUrl/index.php?do=search&subaction=search&story=$query"
+    
+    // Sende die GET-Anfrage und hole das Dokument
+    val document = app.get(url).document
+    
+    // Extrahiere die Suchergebnisse aus dem HTML-Dokument
+    return document.select("div#dle-content div.movie-item").mapNotNull {
+        it.toSearchResult()  // Hier wird das HTML in ein Suchergebnis umgewandelt
+    }
     }
 
     override suspend fun load(url: String): LoadResponse? {
