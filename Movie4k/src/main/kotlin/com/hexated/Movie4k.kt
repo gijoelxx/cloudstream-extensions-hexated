@@ -76,6 +76,7 @@ override suspend fun getMainPage(
         }
     }
 
+    
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun search(query: String): List<SearchResponse> {
@@ -91,55 +92,65 @@ override suspend fun getMainPage(
         it.toSearchResponse()
     } ?: throw ErrorLoadingException()
     }
+
 override suspend fun load(url: String): LoadResponse? {
-        val id = parseJson<Link>(url).id
+        val document = app.get(url).document
 
-        val res = app.get("$mainAPI/data/watch/?_id=$id", referer = "$mainUrl/")
-            .parsedSafe<MediaDetail>() ?: throw ErrorLoadingException()
-        val type = if (res.tv == 1) "tv" else "movie"
+        val title = document.selectFirst("h1.inner-page__title")?.text()?.trim() ?: return null
+        val poster = fixUrlNull(document.selectFirst("div.inner-page__img img")?.attr("src"))
+        val tags = document.select("ul.inner-page__list li:contains(Genre:) a").map { it.text() }
+        val year = document.selectFirst("ul.inner-page__list li:contains(Jahr:)")?.ownText()
+            ?.toIntOrNull()
+        val description = document.select("div.inner-page__text.text.clearfix").text()
+        val duration = document.selectFirst("ul.inner-page__list li:contains(Zeit:)")?.ownText()
+            ?.filter { it.isDigit() }?.toIntOrNull()
+        val actors = document.selectFirst("ul.inner-page__list li:contains(Darsteller:)")?.ownText()
+            ?.split(",")?.map { it.trim() }
+        val recommendations = document.select("div.section__content.section__items div.movie-item")
+            .mapNotNull { it.toSearchResult() }
+        val type = if (document.select("ul.series-select-menu.ep-menu")
+                .isNullOrEmpty()
+        ) TvType.Movie else TvType.TvSeries
+        val trailer = document.selectFirst("div.stretch-free-width.mirrors span:contains(Trailer)")
+            ?.attr("data-link") ?: document.selectFirst("div#trailer iframe")?.attr("src")
 
-        val recommendations =
-            app.get("$mainAPI/data/related_movies/?lang=2&cat=$type&_id=$id&server=0").text.let {
-                tryParseJson<List<Media>>(it)
-            }?.mapNotNull {
-                it.toSearchResponse()
+        if (type == TvType.Movie) {
+            val link = document.select("div.stretch-free-width.mirrors span").map {
+                fixUrl(it.attr("data-link"))
             }
-
-        return if (type == "tv") {
-            val episodes = res.streams?.groupBy { it.e.toString().toIntOrNull() }?.mapNotNull { eps ->
-                val epsNum = eps.key
-                val epsLink = eps.value.map { it.stream }.toJson()
-                Episode(epsLink, episode = epsNum)
-            } ?: emptyList()
-            newTvSeriesLoadResponse(
-                res.title ?: res.original_title ?: return null,
-                url,
-                TvType.TvSeries,
-                episodes
-            ) {
-                this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
-                this.year = res.year
-                this.plot = res.storyline ?: res.overview
-                this.tags = listOf(res.genres ?: "")
+            return newMovieLoadResponse(title, url, TvType.Movie, Links(link).toJson()) {
+                this.posterUrl = poster
+                this.year = year
+                plot = description
+                this.tags = tags
+                this.duration = duration
                 this.recommendations = recommendations
+                addActors(actors)
+                addTrailer(trailer)
             }
         } else {
-            newMovieLoadResponse(
-                res.original_title ?: res.title ?: return null,
-                url,
-                TvType.Movie,
-                res.streams?.map { Link(it.stream) }?.toJson()
-            ) {
-                this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
-                this.year = res.year
-                this.plot = res.storyline ?: res.overview
-                this.tags = listOf(res.genres ?: "")
+            val episodes = document.select("ul.series-select-menu.ep-menu li[id*=serie]").map {
+                val name = it.selectFirst("a")?.text()
+                val link = it.select("li").map { eps ->
+                    fixUrl(eps.select("a").attr("data-link"))
+                }
+                Episode(
+                    Links(link).toJson(),
+                    name
+                )
+            }
+            return newTvSeriesLoadResponse(title, url, TvType.TvSeries, episodes = episodes) {
+                this.posterUrl = poster
+                this.year = year
+                plot = description
+                this.tags = tags
+                this.duration = duration
                 this.recommendations = recommendations
+                addActors(actors)
+                addTrailer(trailer)
             }
         }
-
-    }
-
+}
     override suspend fun loadLinks(
         data: String,
         isCasting: Boolean,
