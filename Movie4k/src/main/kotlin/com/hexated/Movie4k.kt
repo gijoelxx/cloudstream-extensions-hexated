@@ -92,8 +92,7 @@ override suspend fun getMainPage(
         it.toSearchResponse()
     } ?: throw ErrorLoadingException()
     }
-
-    override suspend fun load(url: String): LoadResponse? {
+override suspend fun load(url: String): LoadResponse? {
     val id = parseJson<Link>(url).id
 
     // Lade Media-Details über die API
@@ -107,23 +106,49 @@ override suspend fun getMainPage(
     }?.mapNotNull { it.toSearchResponse() }
 
     return if (type == "tv") {
-        // Gruppiere Episoden nach Staffelnummer
-        val episodesBySeason = res.streams?.groupBy { it.e.toString().toIntOrNull() } ?: emptyMap()
+        // Erstelle und gruppiere die Episoden basierend auf der Staffelnummer
+        val episodes = res.streams?.groupBy { it.e.toString().toIntOrNull() }?.flatMap { (seasonNum, streams) ->
+            streams.mapNotNull { stream ->
+                val episodeNum = stream.e.toString().toIntOrNull()
+                Episode(
+                    data = stream.stream,
+                    season = seasonNum ?: 1,  // Fallback zu Staffel 1, falls keine Staffel angegeben ist
+                    episode = episodeNum,
+                    name = stream.e_title ?: "Episode $episodeNum"
+                )
+            }
+        } ?: emptyList()
 
-        // Erstelle die Staffeln und weise die Episoden zu
-        val seasons = episodesBySeason.map { (seasonNum, episodes) ->
-            SeasonData(
-                seasonNumber = seasonNum,
-                episodes = episodes.mapNotNull { stream ->
-                    val episodeNum = stream.e.toString().toIntOrNull()
-                    Episode(
-                        url = stream.stream,
-                        episode = episodeNum,
-                        name = stream.e_title ?: "Episode $episodeNum"
-                    )
-                }
-            )
+        // Erstelle das TV-Serien-Load-Response-Objekt
+        newTvSeriesLoadResponse(
+            name = res.title ?: res.original_title ?: return null,
+            url = url,
+            type = TvType.TvSeries,
+            episodes = episodes
+        ) {
+            this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
+            this.year = res.year
+            this.plot = res.storyline ?: res.overview
+            this.tags = listOf(res.genres ?: "")
+            this.recommendations = recommendations
         }
+    } else {
+        // Erstelle das Film-Load-Response-Objekt
+        newMovieLoadResponse(
+            name = res.original_title ?: res.title ?: return null,
+            dataUrl = url,
+            type = TvType.Movie,
+            data = res.streams?.map { it.stream }.toJson()
+        ) {
+            this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
+            this.year = res.year
+            this.plot = res.storyline ?: res.overview
+            this.tags = listOf(res.genres ?: "")
+            this.recommendations = recommendations
+        }
+    }
+}
+    
 
         // Erstelle das TV-Serien-Load-Response-Objekt
         newTvSeriesLoadResponse(
@@ -139,24 +164,7 @@ override suspend fun getMainPage(
             this.recommendations = recommendations
         }
     } else {
-        // Erstelle das Film-Load-Response-Objekt
-        newMovieLoadResponse(
-            title = res.original_title ?: res.title ?: return null,
-            url = url,
-            type = TvType.Movie,
-            data = res.streams?.map { Link(it.stream) }?.toJson()
-        ) {
-            this.posterUrl = getImageUrl(res.backdrop_path ?: res.poster_path)
-            this.year = res.year
-            this.plot = res.storyline ?: res.overview
-            this.tags = listOf(res.genres ?: "")
-            this.recommendations = recommendations
-        }
-    }
-    }
-    override suspend fun loadLinks(
-        data: String,
-        isCasting: Boolean,
+          isCasting: Boolean,
         subtitleCallback: (SubtitleFile) -> Unit,
         callback: (ExtractorLink) -> Unit
     ): Boolean {
