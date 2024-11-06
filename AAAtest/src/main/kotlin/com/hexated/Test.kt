@@ -12,12 +12,13 @@ import org.jsoup.Jsoup
 import kotlin.math.roundToInt
 
 open class Test : MainAPI() {
-    override var name = "Moflix"
-    override var mainUrl = "https://moflix-stream.xyz"
+    override var name = "Movie4k"
+    override var mainUrl = "https://movie4k.stream"
     override var lang = "de"
     override val hasMainPage = true
     override val hasQuickSearch = true
     override val supportedTypes = setOf(TvType.TvSeries, TvType.Movie)
+    override val mainAPI "https://api.movie4k.stream"
 
     companion object {
         fun getType(isSeries: Boolean?): TvType {
@@ -36,33 +37,46 @@ open class Test : MainAPI() {
     }
 
     override val mainPage = mainPageOf(
-        "351/channelables.order:asc" to "Kürzlich hinzugefügt",
-        "345/popularity:desc" to "Movie-Datenbank",
-        "352/channelables.order:asc" to "Angesagte Serien",
-        "358/channelables.order:asc" to "Kinder & Familien",
+        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=movies&order_by=trending" to "Trending",
+        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Action&country=&cast=&directors=&type=&order_by=trending"  to "Action Filme",
+        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Kom%C3%B6die&country=&cast=&directors=&type=&order_by=trending"  to "Komödien Filme",
+        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Dokumentation&country=&cast=&directors=&type=&order_by=trending"  to "Dokumentations Filme",
+        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Drama&country=&cast=&directors=&type=&order_by=trending"  to "Drama Filme",
+        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Horror&country=&cast=&directors=&type=&order_by=trending"  to "Horror Filme",
+        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Romantik&country=&cast=&directors=&type=&order_by=trending"  to "Romantik Filme",
+        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Sci-Fi&country=&cast=&directors=&type=&order_by=trending"  to "Sci-Fi Filme",
+        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Thriller&country=&cast=&directors=&type=&order_by=trending"  to "Thriller Filme",
+       )
+    
+private fun getImageUrl(link: String?): String? {
+        if (link == null) return null
+        return if (link.startsWith("/")) "https://image.tmdb.org/t/p/w500/$link" else link
+    }
+
+    private fun getBackupImageUrl(link: String?): String? {
+        if (link == null) return null
+        return "https://cdn.movie4k.stream/data${link.substringAfter("/data")}"
+    }
+
+override suspend fun getMainPage(
+    page: Int,
+    request: MainPageRequest
+): HomePageResponse {
+    val headers = mapOf(
+        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36",
+        "Accept" to "application/json, text/javascript, */*; q=0.01",
+        "X-Requested-With" to "XMLHttpRequest",
+        "Referer" to "$mainUrl/"
     )
-
-    override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
-        val query = request.data.split("/")
-        val home = app.get(
-            "$mainUrl/api/v1/channel/${query.first()}?returnContentOnly=true&restriction=&order=${query.last()}&paginate=simple&perPage=50&query=&page=$page",
-            referer = "$mainUrl/"
-        ).parsedSafe<Responses>()?.pagination?.data?.mapNotNull { it.toSearchResponse() }
-            ?: emptyList()
-
-        return newHomePageResponse(request.name, home)
-    }
-
-    private fun Data.toSearchResponse(): SearchResponse? {
-        return newTvSeriesSearchResponse(
-            this.name ?: return null,
-            "${this.id}",
-            TvType.TvSeries,
-            false
-        ) {
-            posterUrl = this@toSearchResponse.poster?.compress()
-        }
-    }
+    
+    val home = app.get("$mainAPI/${request.data}&page=$page", headers = headers)
+        .parsedSafe<MediaResponse>()?.movies?.mapNotNull { res ->
+            res.toSearchResponse()
+        } ?: throw ErrorLoadingException()
+    
+    return newHomePageResponse(request.name, home)
+    
+}
 
     override suspend fun quickSearch(query: String): List<SearchResponse>? = search(query)
 
