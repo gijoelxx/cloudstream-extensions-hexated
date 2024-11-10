@@ -87,18 +87,17 @@ override suspend fun loadLinks(
     val streamResponse = fetchStreamLinks(data)
     streamResponse?.forEach {
         callback.invoke(
-            // Erstellt eine Instanz von ExtractorLink
-            ExtractorLink(
-                source = it.url,  // Stream-URL
-                name = it.mirror,  // Mirror-Name
-                url = it.url,  // URL zum Stream
-                referer = "Referer",  // (Kann je nach Bedarf angepasst werden)
-                quality = Qualities.Unknown.value,  // Qualität des Streams (vorerst auf Unknown gesetzt)
-                type = ExtractorLinkType.M3U8,  // Stream-Typ (hier z.B. M3U8, kann je nach Typ angepasst werden)
-                headers = emptyMap(),  // Falls zusätzliche Header benötigt werden
-                extractorData = emptyMap()  // Extrahierte Zusatzdaten, falls notwendig
-            )
-        )
+    ExtractorLink(
+        it.url,  // Stream-URL
+        it.mirror,  // Mirror Name
+        it.url,  // URL zum Stream
+        "Referer",  // Referer-Header
+        Qualities.Unknown.value,  // Qualität
+        ExtractorLinkType.M3U8,  // Link-Typ
+        emptyMap<String, String>(),  // Leere Map für Header (Typ korrekt angegeben)
+        emptyMap<String, String>()  // Leere Map für extra Daten (Typ korrekt angegeben)
+    )
+)
     }
     return true
 }
