@@ -78,30 +78,30 @@ class StreamKiste : MainAPI() {
         }
     }
 
-    // Extrahiert die Streaming-Links
-    override suspend fun loadLinks(
-        data: String,
-        isCasting: Boolean,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ): Boolean {
-        val streamResponse = fetchStreamLinks(data)
-        streamResponse?.forEach {
-            callback.invoke(
-                ExtractorLink(
-                    it.url,  // Stream URL
-                    it.mirror,  // Mirror Name (z.B. Mirror 1)
-                    it.url,  // URL zum Stream (wird durch den Link geliefert)
-                    "Referer",  // Referer-Header (kann je nach Bedarf angepasst werden)
-                    Qualities.Unknown.value,  // Qualität, hier auf Unknown gesetzt
-                    ExtractorLinkType.M3U8,  // Link-Typ (kann je nach Stream-Typ angepasst werden)
-                    emptyMap(),  // Headers, falls benötigt
-                    emptyMap()  // Extra Daten, falls benötigt
-                )
+override suspend fun loadLinks(
+    data: String,
+    isCasting: Boolean,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit
+): Boolean {
+    val streamResponse = fetchStreamLinks(data)
+    streamResponse?.forEach {
+        callback.invoke(
+            // Erstellt eine Instanz von ExtractorLink
+            ExtractorLink(
+                source = it.url,  // Stream-URL
+                name = it.mirror,  // Mirror-Name
+                url = it.url,  // URL zum Stream
+                referer = "Referer",  // (Kann je nach Bedarf angepasst werden)
+                quality = Qualities.Unknown.value,  // Qualität des Streams (vorerst auf Unknown gesetzt)
+                type = ExtractorLinkType.M3U8,  // Stream-Typ (hier z.B. M3U8, kann je nach Typ angepasst werden)
+                headers = emptyMap(),  // Falls zusätzliche Header benötigt werden
+                extractorData = emptyMap()  // Extrahierte Zusatzdaten, falls notwendig
             )
-        }
-        return true
+        )
     }
+    return true
+}
 
     // Holt die Streaming-Links von der API
     private suspend fun fetchStreamLinks(data: String): List<Stream>? {
