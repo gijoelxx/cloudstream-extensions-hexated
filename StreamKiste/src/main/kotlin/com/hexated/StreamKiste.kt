@@ -79,30 +79,30 @@ class StreamKiste : MainAPI() {
     }
 
     // Extrahiert die Streaming-Links
-    override suspend fun loadLinks(
-        data: String,
-        isCasting: Boolean,
-        subtitleCallback: (SubtitleFile) -> Unit,
-        callback: (ExtractorLink) -> Unit
-    ): Boolean {
-        val streamResponse = fetchStreamLinks(data)
-        streamResponse?.forEach {
-            callback.invoke(
-                ExtractorLink(
-                    it.url,               // source: Die URL des Streams
-                    it.mirror,            // name: Der Name des Mirrors (z. B. "Mirror 1")
-                    it.url,               // url: Der tatsächliche Stream-Link
-                    "Referer",            // referer: Der Referer-Header (falls erforderlich)
-                    Qualities.Unknown.value, // quality: Qualität des Streams, hier als Platzhalter
-                    ExtractorLinkType.M3U8,  // type: Der Link-Typ (hier M3U8)
-                    emptyMap(),           // headers: Optional, leere Map für Header
-                    emptyMap()            // extractorData: Optional, leere Map für Extraktor-Daten
-                )
+override suspend fun loadLinks(
+    data: String,
+    isCasting: Boolean,
+    subtitleCallback: (SubtitleFile) -> Unit,
+    callback: (ExtractorLink) -> Unit
+): Boolean {
+    val streamResponse = fetchStreamLinks(data)
+    streamResponse?.forEach {
+        callback.invoke(
+            ExtractorLink(
+                it.url,               // source: Die URL des Streams
+                it.mirror,            // name: Der Name des Mirrors (z. B. "Mirror 1")
+                it.url,               // url: Der tatsächliche Stream-Link
+                "Referer",            // referer: Der Referer-Header (falls erforderlich)
+                Qualities.Unknown.value, // quality: Qualität des Streams, hier als Platzhalter
+                ExtractorLinkType.M3U8,  // type: Der Link-Typ (hier M3U8)
+                emptyMap(),           // headers: Optional, leere Map für Header
+                emptyMap()            // extractorData: Optional, leere Map für Extraktor-Daten
             )
-        }
-        return true
+        )
     }
-
+    return true
+}
+    
     // Holt die Streaming-Links von der API
     private suspend fun fetchStreamLinks(data: String): List<Stream>? {
         val response = app.post("https://streamkiste.tv/include/fetch.php", data = mapOf(
