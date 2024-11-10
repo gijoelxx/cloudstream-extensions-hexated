@@ -15,6 +15,10 @@ open class FilmpalastProvider : MainAPI() {
 
     override var lang = "de"
     override val hasMainPage = true
+        override val mainPage = mainPageOf(
+        "/"" to "Neue Filme",
+        "/movies/top" to "Top bewertet",
+    )
 
     private fun Element.toSearchResponse(): SearchResponse {
         val title = select("cite a.rb").text()
