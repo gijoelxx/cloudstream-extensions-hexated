@@ -1,12 +1,12 @@
 // use an integer for version numbers
-version = 5
+version = 1
 
 
 cloudstream {
     language = "de"
     // All of these properties are optional, you can safely remove them
 
-    description = "Include: Movie4k,Movie2k,TvM3u Support"
+    description = "XcineStream"
      authors = listOf("GIJoelX")
 
     /**
