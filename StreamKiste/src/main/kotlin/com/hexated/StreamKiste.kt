@@ -88,14 +88,14 @@ override suspend fun loadLinks(
     streamResponse?.forEach {
         callback.invoke(
     ExtractorLink(
-        it.url,  // Stream-URL
-        it.mirror,  // Mirror Name
-        it.url,  // URL zum Stream
-        "Referer",  // Referer-Header
-        Qualities.Unknown.value,  // Qualität
-        ExtractorLinkType.M3U8,  // Link-Typ
-        emptyMap<String, String>(),  // Leere Map für Header (Typ korrekt angegeben)
-        emptyMap<String, String>()  // Leere Map für extra Daten (Typ korrekt angegeben)
+        source = it.url,  // Stream URL
+        name = it.mirror,  // Mirror Name
+        url = it.url,  // URL zum Stream
+        referer = "Referer",  // Referer-Header
+        quality = Qualities.Unknown.value,  // Qualität
+        type = ExtractorLinkType.M3U8,  // Link-Typ
+        headers = emptyMap<String, String>(),  // Leere Map für Header
+        extractorData = null  // Extrahierte Zusatzdaten als null (oder ein String, falls benötigt)
     )
 )
     }
