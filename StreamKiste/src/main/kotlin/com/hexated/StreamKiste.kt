@@ -9,6 +9,9 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 import org.jsoup.nodes.Element
 import okhttp3.OkHttpClient
+val client = OkHttpClient.Builder()
+        .addInterceptor(CloudflareKiller())
+        .build()
 
 class StreamKiste : MainAPI() {
     override var name = "StreamKiste"
@@ -16,9 +19,6 @@ class StreamKiste : MainAPI() {
     override var lang = "de"
     override val hasMainPage = true
     override val supportedTypes = setOf(TvType.TvSeries, TvType.Movie)
-    val client = OkHttpClient.Builder()
-        .addInterceptor(CloudflareKiller())
-        .build()
 
     override val mainPage = mainPageOf(
         "cat/filme/sortby/popular" to "Derzeit Beliebt",
