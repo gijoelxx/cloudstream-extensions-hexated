@@ -309,9 +309,18 @@ return try {
         this.streamLinks = streamLinks.ifEmpty { listOf() } // Fallback für Stream-Links
         this.streams = streams.ifEmpty { listOf() } // Fallback für Streams
     }
-} catch (e: Exception) {
+} 
+
+// Definition der logError Methode
+private fun logError(message: String, e: Exception) {
+    Timber.e(e, message) // Protokolliere sowohl die Nachricht als auch die Ausnahme
+}
+
+// Fehlerbehandlung im catch-Block
+catch (e: Exception) {
     // Fehlerbehandlung, falls irgendetwas bei der Rückgabe schiefgeht
-    logError("Fehler beim Erstellen der Antwort: ${e.message}")
+    logError("Fehler beim Erstellen der Antwort: ${e.message}", e)
+    
     // Rückgabe einer Antwort mit Standardwerten oder leeren Listen
     newTvSeriesLoadResponse(title, url, TvType.Movie, episodes = emptyList()) {
         this.posterUrl = "DefaultPosterUrl"
