@@ -10,8 +10,8 @@ import com.lagradost.cloudstream3.utils.Qualities
 import com.lagradost.cloudstream3.utils.loadExtractor
 
 open class Movie4k : MainAPI() {
-    override var name = "Movie4k"
-    override var mainUrl = "https://movie4k.stream"
+    override var name = "XCine"
+    override var mainUrl = "https://www.movie4k.stream"
     override var lang = "de"
     override val hasQuickSearch = true
     override val usesWebView = false
@@ -21,15 +21,10 @@ open class Movie4k : MainAPI() {
 
     override val mainPage = mainPageOf(
         "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=movies&order_by=trending" to "Trending",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Action&country=&cast=&directors=&type=&order_by=trending"  to "Action Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Kom%C3%B6die&country=&cast=&directors=&type=&order_by=trending"  to "Komödien Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Dokumentation&country=&cast=&directors=&type=&order_by=trending"  to "Dokumentations Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Drama&country=&cast=&directors=&type=&order_by=trending"  to "Drama Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Horror&country=&cast=&directors=&type=&order_by=trending"  to "Horror Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Romantik&country=&cast=&directors=&type=&order_by=trending"  to "Romantik Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Sci-Fi&country=&cast=&directors=&type=&order_by=trending"  to "Sci-Fi Filme",
-        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=Thriller&country=&cast=&directors=&type=&order_by=trending"  to "Thriller Filme",
- 
+        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=movies&order_by=Views" to "Most View Filme",
+        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=tvseries&order_by=Trending" to "Trending Serien",
+        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=movies&order_by=Updates" to "Updated Filme",
+        "data/browse/?lang=2&keyword=&year=&rating=&votes=&genre=&country=&cast=&directors=&type=tvseries&order_by=Updates" to "Updated Serien",
     )
 
     private fun getImageUrl(link: String?): String? {
@@ -42,25 +37,17 @@ open class Movie4k : MainAPI() {
         return "https://cdn.movie4k.stream/data${link.substringAfter("/data")}"
     }
 
-override suspend fun getMainPage(
-    page: Int,
-    request: MainPageRequest
-): HomePageResponse {
-    val headers = mapOf(
-        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36",
-        "Accept" to "application/json, text/javascript, */*; q=0.01",
-        "X-Requested-With" to "XMLHttpRequest",
-        "Referer" to "$mainUrl/"
-    )
-    
-    val home = app.get("$mainAPI/${request.data}&page=$page", headers = headers)
-        .parsedSafe<MediaResponse>()?.movies?.mapNotNull { res ->
-            res.toSearchResponse()
-        } ?: throw ErrorLoadingException()
-    
-    return newHomePageResponse(request.name, home)
-}
-
+    override suspend fun getMainPage(
+        page: Int,
+        request: MainPageRequest
+    ): HomePageResponse {
+        val home =
+            app.get("$mainAPI/${request.data}&page=$page", referer = "$mainUrl/")
+                .parsedSafe<MediaResponse>()?.movies?.mapNotNull { res ->
+                    res.toSearchResponse()
+                } ?: throw ErrorLoadingException()
+        return newHomePageResponse(request.name, home)
+    }
 
     private fun Media.toSearchResponse(): SearchResponse? {
         return newAnimeSearchResponse(
@@ -79,17 +66,10 @@ override suspend fun getMainPage(
     override suspend fun quickSearch(query: String): List<SearchResponse> = search(query)
 
     override suspend fun search(query: String): List<SearchResponse> {
-    val headers = mapOf(
-        "User-Agent" to "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.36",
-        "Accept" to "application/json, text/javascript, */*; q=0.01",
-        "X-Requested-With" to "XMLHttpRequest",
-        "Referer" to "$mainUrl/"
-    )
-    
-    val res = app.get("$mainAPI/data/search/?lang=2&keyword=$query", headers = headers).text
-    return tryParseJson<ArrayList<Media>>(res)?.mapNotNull {
-        it.toSearchResponse()
-    } ?: throw ErrorLoadingException()
+        val res = app.get("$mainAPI/data/search/?lang=2&keyword=$query", referer = "$mainUrl/").text
+        return tryParseJson<ArrayList<Media>>(res)?.mapNotNull {
+            it.toSearchResponse()
+        } ?: throw ErrorLoadingException()
     }
 
     override suspend fun load(url: String): LoadResponse? {
