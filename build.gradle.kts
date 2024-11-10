@@ -85,6 +85,7 @@ subprojects {
         implementation("org.mozilla:rhino:1.7.14") //run JS
         implementation("com.google.code.gson:gson:2.8.8")
         implementation("com.squareup.okhttp3:okhttp:4.10.0")
+        implementation("com.jakewharton.timber:timber:5.0.1")
 
     }
 }
