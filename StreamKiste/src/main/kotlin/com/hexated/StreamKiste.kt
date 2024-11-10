@@ -16,12 +16,12 @@ class StreamKiste : MainAPI() {
 
     // Menü- und Navigationsstruktur
     override val mainPage = mainPageOf(
-            "" to "Startseite",
-            "cat/serien" to "Serien",
-            "cat/filme" to "Filme",
-            "cat/filme/sortby/popular" to "Derzeit Beliebt",
-            "cat/filme/sortby/update" to "Letzte Updates",
-            "search" to "Suche"
+        "" to "Startseite",
+        "cat/serien" to "Serien",
+        "cat/filme" to "Filme",
+        "cat/filme/sortby/popular" to "Derzeit Beliebt",
+        "cat/filme/sortby/update" to "Letzte Updates",
+        "search" to "Suche"
     )
 
     // Hauptseite für Filme und Serien
@@ -89,14 +89,14 @@ class StreamKiste : MainAPI() {
         streamResponse?.forEach {
             callback.invoke(
                 ExtractorLink(
-                    it.url,
-                    it.mirror,
-                    it.url,
-                    "Referer",
-                    Qualities.Unknown.value,
-                    ExtractorLinkType.M3U8,
-                    emptyMap(),
-                    emptyMap()
+                    it.url,               // source: Die URL des Streams
+                    it.mirror,            // name: Der Name des Mirrors (z. B. "Mirror 1")
+                    it.url,               // url: Der tatsächliche Stream-Link
+                    "Referer",            // referer: Der Referer-Header (falls erforderlich)
+                    Qualities.Unknown.value, // quality: Qualität des Streams, hier als Platzhalter
+                    ExtractorLinkType.M3U8,  // type: Der Link-Typ (hier M3U8)
+                    emptyMap(),           // headers: Optional, leere Map für Header
+                    emptyMap()            // extractorData: Optional, leere Map für Extraktor-Daten
                 )
             )
         }
