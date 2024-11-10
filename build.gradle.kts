@@ -84,6 +84,7 @@ subprojects {
         implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.0")
         implementation("org.mozilla:rhino:1.7.14") //run JS
         implementation("com.google.code.gson:gson:2.8.8")
+        implementation("com.squareup.okhttp3:okhttp:4.10.0")
 
     }
 }
