@@ -16,18 +16,18 @@ class StreamKiste : MainAPI() {
 
     // Menü- und Navigationsstruktur
     override val mainPage = mainPageOf(
-        "" to "Startseite",
-        "cat/serien" to "Serien",
-        "cat/filme" to "Filme",
-        "cat/filme/sortby/popular" to "Derzeit Beliebt",
-        "cat/filme/sortby/update" to "Letzte Updates",
-        "search" to "Suche"
+            "" to "Startseite",
+            "cat/serien" to "Serien",
+            "cat/filme" to "Filme",
+            "cat/filme/sortby/popular" to "Derzeit Beliebt",
+            "cat/filme/sortby/update" to "Letzte Updates",
+            "search" to "Suche"
     )
 
     // Hauptseite für Filme und Serien
     override suspend fun getMainPage(page: Int, request: MainPageRequest): HomePageResponse {
         val document = app.get("$mainUrl/${request.data}/page/$page").document
-        val home = document.select("div#dle-content div.short").mapNotNull {
+        val home = document.select("div.movie-item").mapNotNull {  // Angepasster Selektor
             it.toSearchResult()
         }
         return newHomePageResponse(request.name, home)
@@ -41,8 +41,8 @@ class StreamKiste : MainAPI() {
     // Extrahiert relevante Informationen von der Hauptseite
     private fun Element.toSearchResult(): SearchResponse? {
         val href = this.selectFirst("a")?.attr("href") ?: return null
-        val title = this.selectFirst("a")?.text() ?: return null
-        val posterUrl = this.selectFirst("img")?.getImageAttr()
+        val title = this.selectFirst("h2")?.text() ?: return null  // Titel aus h2 extrahieren
+        val posterUrl = this.selectFirst("img")?.getImageAttr()   // Bild-URL extrahieren
         return newTvSeriesSearchResponse(title, getProperLink(href), TvType.TvSeries) {
             this.posterUrl = posterUrl
         }
@@ -51,7 +51,7 @@ class StreamKiste : MainAPI() {
     // Implementierung der Suchfunktion
     override suspend fun search(query: String): List<SearchResponse> {
         val document = app.get("$mainUrl/search/?sq=$query").document
-        return document.select("div#dle-content div.titlecontrol").mapNotNull {
+        return document.select("div.movie-item").mapNotNull {  // Angepasster Selektor
             it.toSearchResult()
         }
     }
@@ -79,30 +79,30 @@ class StreamKiste : MainAPI() {
     }
 
     // Extrahiert die Streaming-Links
-override suspend fun loadLinks(
-    data: String,
-    isCasting: Boolean,
-    subtitleCallback: (SubtitleFile) -> Unit,
-    callback: (ExtractorLink) -> Unit
-): Boolean {
-    val streamResponse = fetchStreamLinks(data)
-    streamResponse?.forEach {
-        callback.invoke(
-            ExtractorLink(
-                it.url,               // source: Die URL des Streams
-                it.mirror,            // name: Der Name des Mirrors (z. B. "Mirror 1")
-                it.url,               // url: Der tatsächliche Stream-Link
-                "Referer",            // referer: Der Referer-Header (falls erforderlich)
-                Qualities.Unknown.value, // quality: Qualität des Streams, hier als Platzhalter
-                ExtractorLinkType.M3U8,  // type: Der Link-Typ (hier M3U8)
-                emptyMap(),           // headers: Optional, leere Map für Header
-                emptyMap()            // extractorData: Optional, leere Map für Extraktor-Daten
+    override suspend fun loadLinks(
+        data: String,
+        isCasting: Boolean,
+        subtitleCallback: (SubtitleFile) -> Unit,
+        callback: (ExtractorLink) -> Unit
+    ): Boolean {
+        val streamResponse = fetchStreamLinks(data)
+        streamResponse?.forEach {
+            callback.invoke(
+                ExtractorLink(
+                    it.url,  // Stream URL
+                    it.mirror,  // Mirror Name (z.B. Mirror 1)
+                    it.url,  // URL zum Stream (wird durch den Link geliefert)
+                    "Referer",  // Referer-Header (kann je nach Bedarf angepasst werden)
+                    Qualities.Unknown.value,  // Qualität, hier auf Unknown gesetzt
+                    ExtractorLinkType.M3U8,  // Link-Typ (kann je nach Stream-Typ angepasst werden)
+                    emptyMap(),  // Headers, falls benötigt
+                    emptyMap()  // Extra Daten, falls benötigt
+                )
             )
-        )
+        }
+        return true
     }
-    return true
-}
-    
+
     // Holt die Streaming-Links von der API
     private suspend fun fetchStreamLinks(data: String): List<Stream>? {
         val response = app.post("https://streamkiste.tv/include/fetch.php", data = mapOf(
@@ -116,8 +116,9 @@ override suspend fun loadLinks(
 
         val streams = response?.select("div#stream-links a")?.mapNotNull {
             val url = it.attr("href")
-            val mirror = it.parent()?.select("div#mirror-head")?.text()?.split("|")?.get(0)?.trim() ?: "Mirror 1"
-            val date = it.parent()?.select("div#mirror-head")?.text()?.split("|")?.get(1)?.trim() ?: "Unknown"
+            val mirrorAndDate = it.parent()?.select("div#mirror-head")?.text()?.split("|") ?: listOf("Mirror 1", "Unknown")
+            val mirror = mirrorAndDate.getOrElse(0) { "Mirror 1" }
+            val date = mirrorAndDate.getOrElse(1) { "Unknown" }
             Stream(url, mirror, date)
         }
         return streams
